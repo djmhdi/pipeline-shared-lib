@@ -1,0 +1,61 @@
+{
+	"projectName": "jb007",
+	"sonarInstance": "sonar-instance",
+	"javaVersionHome": "JAVA_1_8_0_66_HOME",
+	"groovyVersionHome": "GROOVY_2_4_3_HOME",
+	"mavenVersionHome": "MAVEN_3_3_9_HOME",
+	"provenCredentialId": "proven_user",
+	"logNumToKeep": "30",
+	"emails": {
+		"project": "project@pole-emploi.fr",
+		"support": "support@pole-emploi.fr",
+		"deliv": "deliv@pole-emploi.fr",
+		"ops": "ops@pole-emploi.fr"
+	},
+	"requestSubmitters" : "login neptune de ceux qui peuvent faire des demandes de livraison et/ou de promotion",
+	"deliverySubmitters" : "login neptune des livreurs",
+	"environnements": {
+		"A": {
+			"matrix": "fr.pe.urba.service.jb007:jb007-sample:cadre-a",
+			"category" : "fab"
+		},
+		"U": {
+			"matrix": "fr.pe.urba.service.jb007:jb007-sample:cadre-u",
+			"category" : "fab"
+		},
+		"N": {
+			"matrix": "fr.pe.urba.service.jb007:jb007-sample:cadre-n",
+			"category" : "fab"
+		},
+		"R": {
+			"matrix": "fr.pe.urba.service.jb007:jb007-sample:cadre-r",
+			"category" : "fab"
+		},
+		"M": {
+			"matrix": "fr.pe.urba.service.jb007:jb007-sample:cadre-m",
+			"category" : "fab"
+		},
+		"B": {
+			"matrix": "fr.pe.urba.service.jb007:jb007-sample:cadre-b",
+			"category" : "fab"
+		},
+		"T": {
+			"matrix": "fr.pe.urba.service.jb007:jb007-sample:cadre-t",
+			"category" : "fab"
+		},
+		"PMS": {
+			"matrix": "fr.pe.urba.service.jb007:jb007-sample:cadre-pms",
+			"category" : "prod"
+		},
+		"Prod": {
+			"matrix": "fr.pe.urba.service.jb007:jb007-sample:cadre-prod",
+			"category" : "prod"
+		}
+	},
+	"components": [
+		"fr.pe.urba.service.jb007:jb007-sample-base",
+		"fr.pe.urba.service.jb007:jb007-sample-data",
+		"fr.pe.urba.service.jb007:jb007-sample-fonts",
+		"fr.pe.urba.service.jb007:jb007-sample-sld"
+	]
+}

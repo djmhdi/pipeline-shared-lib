@@ -1,0 +1,133 @@
+#!/usr/bin/groovy
+@Library(['utility-dsl@v1.1','pipeline-shared-lib@notification-property-exception'])_
+
+import fr.pe.jenkins.plugins.bundle.BundleFactory
+import fr.pe.jenkins.plugins.bundle.Bundle
+import fr.pe.jenkins.plugins.util.*
+import fr.pe.jenkins.plugins.notification.*
+import fr.pe.jenkins.plugins.notification.simple.*
+import fr.pe.jenkins.plugins.notification.library.*
+import fr.pe.jenkins.plugins.quality.*
+
+def configuration = [:]
+String projectName
+
+pipeline {
+    agent any
+
+    environment {
+		 GROOVY_VERSION_HOME = 'GROOVY_2_4_3_HOME'
+		 PROVEN_CREDENTIAL_ID = "proven_user"
+		 CONFIG_FILE = "ic/configuration.json"
+		 POM_DEFINITION = "pom.xml"
+    }
+
+    options {
+    	buildDiscarder(logRotator(numToKeepStr: '10'))
+    	disableConcurrentBuilds()
+    	retry(2)
+    }
+
+    stages {
+            stage('Send notifications') {
+                steps {
+                	script {
+                            configuration = json.parseFromText(readFile(env.CONFIG_FILE))
+                            projectName = configuration.projet
+
+                            def pomDefinition = readMavenPom file: env.POM_DEFINITION
+                            def releaseQualifier = "${env['RELEASE_QUALIFIER'] ? env['BUILD_NUMBER'] + '-' + env['RELEASE_QUALIFIER'].toLowerCase() : env['BUILD_NUMBER']}"
+                       		def pipelineBundle = BundleFactory.createStandardReleaseBundleFromPom(pomDefinition, releaseQualifier, "hpi")
+                       		pipelineBundle.changelog = "Changelog blablabla"
+
+                       		def content = readFile "ic/release.slack"
+                       		String title = "@all [test][${currentBuild.currentResult}] "
+                       		title <<= "Build release "
+                       		title <<= "${pipelineBundle.artifactId} ${pipelineBundle.releaseVersion}"
+
+                       		env['customBuildResult'] = 'SUCCESS'
+
+                       		Notification slackNotif = CustomNotification.slack().with(NotificationProtocol.SLACK, title, content)
+                       		                                                    .withSlackOpts("http://mattermost.pic-mutualisee.pole-emploi.intra/hooks/i5r9c4q3einmjfieeehdagza8o", "#jenkinsedd")
+                       			slackNotif.appendData(NotificationDataKeys.BUNDLE.key, pipelineBundle)
+                       			slackNotif.appendData(NotificationDataKeys.PROJECT_NAME.key, projectName)
+
+                       		Notification dliv = DemandeLivraison.to(configuration.contacts.EQUIPE, "")
+                       		                                    .by([NotificationProtocol.MAIL, NotificationProtocol.SLACK])
+                                                                   .withSlackOpts("http://mattermost.pic-mutualisee.pole-emploi.intra/hooks/i5r9c4q3einmjfieeehdagza8o", "#jenkinsedd")
+                       			dliv.appendData(NotificationDataKeys.BUNDLE.key, pipelineBundle)
+                       			dliv.appendData(NotificationDataKeys.PROJECT_NAME.key, projectName)
+                       			dliv.appendData(NotificationDataKeys.BUNDLES.key, [pipelineBundle])
+                       			dliv.appendData(NotificationDataKeys.CADRE.key, 'TIC')
+                       			dliv.appendData(NotificationDataKeys.DESCRIPTION.key, 'TIC')
+
+                       		Notification construction = ConstructionVersion.to(configuration.contacts.EQUIPE, "").by([NotificationProtocol.MAIL, NotificationProtocol.SLACK])
+                                                                              .withSlackOpts("http://mattermost.pic-mutualisee.pole-emploi.intra/hooks/i5r9c4q3einmjfieeehdagza8o", "#jenkinsedd")
+                       			construction.appendData(NotificationDataKeys.BUNDLE.key, pipelineBundle)
+                       			construction.appendData(NotificationDataKeys.PROJECT_NAME.key, projectName)
+                       			construction.appendData(NotificationDataKeys.BUNDLES.key, [pipelineBundle])
+                       			construction.appendData(NotificationDataKeys.DESCRIPTION.key, 'TIC')
+
+                       		Notification deploiement = Deploiement.to(configuration.contacts.EQUIPE, "").by([NotificationProtocol.MAIL, NotificationProtocol.SLACK])
+                                                                                    .withSlackOpts("http://mattermost.pic-mutualisee.pole-emploi.intra/hooks/i5r9c4q3einmjfieeehdagza8o", "#jenkinsedd")
+                       			deploiement.appendData(NotificationDataKeys.BUNDLE.key, pipelineBundle)
+                       			deploiement.appendData(NotificationDataKeys.PROJECT_NAME.key, projectName)
+                       			deploiement.appendData(NotificationDataKeys.BUNDLES.key, [pipelineBundle])
+                       			deploiement.appendData(NotificationDataKeys.CADRE.key, 'TIC')
+                       			deploiement.appendData(NotificationDataKeys.DESCRIPTION.key, 'TIC')
+
+                       		Notification promotion = Promotion.to(configuration.contacts.EQUIPE, "")
+                       										.by([NotificationProtocol.MAIL, NotificationProtocol.SLACK])
+                       										.withSlackOpts("http://mattermost.pic-mutualisee.pole-emploi.intra/hooks/i5r9c4q3einmjfieeehdagza8o", "#jenkinsedd")
+                       			promotion.appendData(NotificationDataKeys.BUNDLE.key, pipelineBundle)
+                       			promotion.appendData(NotificationDataKeys.PROJECT_NAME.key, projectName)
+                       			promotion.appendData(NotificationDataKeys.BUNDLES.key, [pipelineBundle])
+                       			promotion.appendData(NotificationDataKeys.DESCRIPTION.key, 'TIC')
+                       			promotion.appendData(NotificationDataKeys.PROMOTION_LEVEL.key, 'RC')
+
+                            def delivery = [:]
+                                delivery.approUrl = "http://proven.intra/approUrl"
+                                delivery.logUrl = "http://proven.intra/logUrl"
+                                delivery.status = "SUCCESS"
+                       		Notification livraison = Livraison.to(configuration.contacts.EQUIPE, "")
+                       										  .by([NotificationProtocol.MAIL, NotificationProtocol.SLACK])
+                                                                 .withSlackOpts("http://mattermost.pic-mutualisee.pole-emploi.intra/hooks/i5r9c4q3einmjfieeehdagza8o", "#jenkinsedd")
+                       			livraison.appendData(NotificationDataKeys.BUNDLE.key, pipelineBundle)
+                       			livraison.appendData(NotificationDataKeys.PROJECT_NAME.key, projectName)
+                       			livraison.appendData(NotificationDataKeys.BUNDLES.key, [pipelineBundle])
+                       			livraison.appendData(NotificationDataKeys.DESCRIPTION.key, 'TIC')
+                       			livraison.appendData(NotificationDataKeys.CADRE.key, 'TIC')
+                       			livraison.appendData(NotificationDataKeys.PROMOTION_LEVEL.key, 'RC')
+                       			livraison.appendData(NotificationDataKeys.MATRICE.key, configuration.environnements.TIC.matrix)
+                       			livraison.appendData(NotificationDataKeys.DELIVERY.key, delivery)
+
+                       		Notification verifDeploiement = VerificationDeploiement.to(configuration.contacts.EQUIPE, "").by([NotificationProtocol.MAIL, NotificationProtocol.SLACK])
+                                                                                      .withSlackOpts("http://mattermost.pic-mutualisee.pole-emploi.intra/hooks/i5r9c4q3einmjfieeehdagza8o", "#jenkinsedd")
+                       			verifDeploiement.appendData(NotificationDataKeys.BUNDLE.key, pipelineBundle)
+                       			verifDeploiement.appendData(NotificationDataKeys.PROJECT_NAME.key, projectName)
+                       			verifDeploiement.appendData(NotificationDataKeys.BUNDLES.key, [pipelineBundle])
+                       			verifDeploiement.appendData(NotificationDataKeys.CADRE.key, 'TIC')
+                       			verifDeploiement.appendData(NotificationDataKeys.DESCRIPTION.key, 'TIC')
+
+                       		 String jsonProjectProps = '{ "serverVersion":"6.4.0.25310",'
+                               jsonProjectProps <<= '"projectKey":"fr.pe.stra.service.ds004:ds004-docnums:Continuous",'
+                               jsonProjectProps <<= '"dashboardUrl":"http://sonar.pic-mutualisee.pole-emploi.intra/sonar004/dashboard/index/fr.pe.stra.service.ds004:ds004-docnums:Continuous",'
+                               jsonProjectProps <<= '"serverUrl":"http://sonar.pic-mutualisee.pole-emploi.intra/sonar004",'
+                               jsonProjectProps <<= '"ceTaskUrl":"http://sonar.pic-mutualisee.pole-emploi.intra/sonar004/api/ce/task?id=AV6oqtFqLV1TgW7FJKKG",'
+                               jsonProjectProps <<= '"ceTaskId":"AV6oqtFqLV1TgW7FJKKG"}'
+
+                       		Notification verifQualite = VerificationQualite.to(configuration.contacts.EQUIPE, "").by([NotificationProtocol.MAIL, NotificationProtocol.SLACK])
+                                                                                             .withSlackOpts("http://mattermost.pic-mutualisee.pole-emploi.intra/hooks/i5r9c4q3einmjfieeehdagza8o", "#jenkinsedd")
+                       			verifQualite.appendData(NotificationDataKeys.BUNDLE.key, pipelineBundle)
+                       			verifQualite.appendData(NotificationDataKeys.PROJECT_NAME.key, projectName)
+                       			verifQualite.appendData(NotificationDataKeys.BUNDLES.key, [pipelineBundle])
+                       			verifQualite.appendData(NotificationDataKeys.SONAR.key, json.parseFromText(jsonProjectProps))
+
+                       		notifier {
+                       		    notifications = [slackNotif, dliv, construction, deploiement, promotion, livraison, verifDeploiement, verifQualite]
+                       		}
+                    }
+                }
+            }
+      }
+}

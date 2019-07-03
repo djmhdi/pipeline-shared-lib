@@ -1,0 +1,46 @@
+{
+	"projet": "<nom projet>",
+	"team": {
+		"endpoint": "http://mattermost.pic-mutualisee.pole-emploi.intra/hooks/<id hook team>",
+		"channel": "#<channel>"
+	},
+	"environnements": {
+		"TIC": {
+			"matrix": "fr.pe.ged.gedfa:mtx-gedfa-appro-fab:cadre-a",
+			"deploy": true
+		},
+		"TIS": {
+			"matrix": "fr.pe.ged.gedfa:mtx-gedfa-appro-fab:cadre-u",
+			"deploy": true
+		},
+		"VA": {
+			"matrix": "fr.pe.ged.gedfa:mtx-gedfa-appro-fab:cadre-r"
+		},
+		"PMS-1": {
+			"matrix": "fr.pe.ged.gedfa:mtx-gedfa-appro-prod:pms-1",
+            "production": true
+		},
+		"PMS-2": {
+			"matrix": "fr.pe.ged.gedfa:mtx-gedfa-appro-prod:pms-2",
+            "production": true
+		},
+		"PROD-1": {
+			"matrix": "fr.pe.ged.gedfa:mtx-gedfa-appro-prod:prod-1",
+            "production": true
+		},
+		"PROD-2": {
+			"matrix": "fr.pe.ged.gedfa:mtx-gedfa-appro-prod:prod-2",
+            "production": true
+		}
+	},
+	"contacts": {
+		"EQUIPE": "<adresses email separees par des virgules>",
+		"LIV": "<adresses email separees par des virgules>",
+		"ST": "<adresses email separees par des virgules>",
+	},
+	"submitters": {
+		"PROMOTION": "<identifiants neptune separes par des virgules>",
+		"DEMANDE_LIVRAISON": "<identifiants neptune separes par des virgules>",
+		"LIVRAISON": "<identifiants neptune separes par des virgules>",
+	}
+}

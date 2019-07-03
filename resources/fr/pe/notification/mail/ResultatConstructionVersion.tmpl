@@ -1,0 +1,37 @@
+<html>
+	<head>
+		<title>$title</title>
+		<style>
+			body, pre, table { font-family: Arial, sans-serif; font-size: 14px;}
+			.buildlog { font-family: monospace; font-size: 12px; }
+			table { border-collapse: collapse; width: 100%; }
+			th, td { border: 1px solid black; padding: 4px; text-align: left; }
+			caption { font-weight: bold;}
+			.SUCCESS, .install { color: green }
+			.FAILURE, .fail { color: red }
+			.UNSTABLE { color: orange }
+			.NOT_BUILT, ABORTED { color: grey }
+			.decomp { color: blue }
+		</style>
+	</head>
+	<body>
+		<p>Bonjour</p>
+		<p>Le build Release du composant ci-dessous pour le projet <b>$projectName</b> est au statut <span class="$currentBuild.currentResult"><b>$currentBuild.currentResult</b></span></p>
+		<table>
+			<caption>Bundle</caption>
+		 	<tr>
+		       <th>GroupId</th><th>ArtifactId</th> <th>Version</th>
+		   </tr>
+		   <tr>
+			   <td>$bundle.groupId</td><td>$bundle.artifactId</td><td>$bundle.releaseVersion</td>
+		   </tr>
+		</table>
+		<p>Url du pipeline : <a href="$env.JOB_URL">$env.JOB_NAME</a> - <a href="$env.BUILD_URL">Build #$env.BUILD_NUMBER</a></p>
+		<br/>
+		<p>$signature</p>
+		<br/>
+		<% if(! "SUCCESS".equalsIgnoreCase(currentBuild.currentResult) ) { %>
+		    <quote>$currentBuild.rawBuild.log</quote>
+		<% } %>
+	</body>
+</html>

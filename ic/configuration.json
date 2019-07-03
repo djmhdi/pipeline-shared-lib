@@ -1,0 +1,11 @@
+{
+  "projet": "pipeline-shared-lib",
+  "environnements": {
+    "TIC": {
+      "matrix": "fr.pe.tech.jenkins.plugins:pipeline-shared-lib-matrice:tic"
+    },
+  },
+  "contacts": {
+    "EQUIPE": "gwendal.gortais-ext@pole-emploi.fr",
+  }
+}

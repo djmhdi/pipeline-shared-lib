@@ -1,0 +1,79 @@
+/*******************************************************************/
+/** Un exemple de pipeline de livraison hors release              **/
+/** Avec notification Mail et Mattermost                          **/
+/** La livraison PROD doit être validée par un livreur            **/
+/** possédant les droits Proven suffisants                        **/
+/** Les choix listés dans le paramètre CADRE reflètent            **/
+/** ceux déclarés dans la configuration JSON                      **/
+/** La configuration JSON    doit respecter le formalisme suivant **/
+/*
+    {
+        "projet": "<mon projet>",
+        "team": {
+            "endpoint": "http://mattermost.pic-mutualisee.pole-emploi.intra/hooks/....",
+            "channel": "#monchanel"
+        },
+        "packaging":"jar",
+        "environnements": {
+            "TIC": {
+                "matrix": "<groupId>:<artifactId>:<version>",
+                "deliver": "AUTO"
+            },
+            "VA": {
+                "matrix": "<groupId>:<artifactId>:<version>"
+            },
+            "PROD": {
+                "matrix": "<groupId>:<artifactId>:<version>"
+            }
+        },
+        "contacts": {
+            "EQUIPE": "prenom.nom@pole-emploi.fr",
+            "LIV": "prenom.nom@pole-emploi.fr",
+            "ST": "prenom.nom@pole-emploi.fr"
+        },
+        "submitters": {
+            "PROMOTION": "<liste de users neptune>",
+            "DEMANDE_LIVRAISON": "<liste de users neptune>",
+            "LIVRAISON": "<liste de users neptune>",
+        }
+    }
+*/
+/*******************************************************************/
+
+@Library(['utility-dsl@v2.0-alpha','pipeline-shared-lib@2.0-rc'])_
+
+String optionsCadre = "TIC\nTIS\nVA\nPROD"
+def configurationFile = "ic/configuration.json"
+def configurationJson = '''
+                            {
+                            "projet": "<mon projet>",
+                            "team": {
+                            	"endpoint": "http://mattermost.pic-mutualisee.pole-emploi.intra/hooks/....",
+                            	"channel": "#monchannel"
+                            },
+                            "environnements": {
+                                "TIC": {
+                                    "matrix": "<groupId>:<artifactId>:<version>",
+                                    "deploy": true
+                                },
+                                "VA": {
+                                    "matrix": "<groupId>:<artifactId>:<version>"
+                                },
+                                "PROD": {
+                                	"matrix": "<groupId>:<artifactId>:<version>",
+                                	"production": true
+                                }
+                            },
+                            "submitters": {
+                                         "PROMOTION": "<liste de users neptune>",
+                                         "DEMANDE_LIVRAISON": "<liste de users neptune>",
+                                         "LIVRAISON": "<liste de users neptune>",
+                                     }
+                        }'''
+def prodEnvNames = ['PROD', 'PMS']
+
+livrerMatrice {
+	CONFIGURATION_JSON = configurationJson ou CONFIGURATION_FILE = configurationFile
+	OPTIONS_CADRE = optionsCadre
+	PROD_ENVNAMES = prodEnvNames
+}

@@ -1,0 +1,191 @@
+#!/usr/bin/groovy
+@Library(['pe-cps@v1.2','pipeline-shared-lib@1.latest']) _
+
+import static fr.pe.jenkins.plugins.bundle.BundleFactory.*
+import static fr.pe.jenkins.plugins.notification.html.NotificationHtmlFactory.*
+import fr.pe.jenkins.plugins.notification.Notification
+import fr.pe.jenkins.plugins.notification.NotificationLevel
+import fr.pe.jenkins.plugins.notification.NotificationProtocol
+import fr.pe.jenkins.plugins.util.JenkinsNodes
+
+def bundlesList = []
+def envConfig
+String envName
+String requestSubmitters
+String deliverySubmitters
+String description
+def delivAuto = false
+NotificationLevel notificationLevel = NotificationLevel.SUCCESS
+
+// On aurait pu mettre l'info dans le fichir de configuration, mais pour des cas plus compliqués cela ne marche pas bien, 
+// par exemple quand on ne veut pas déployer certains composants, c'est plus efficace de passer par le code que la configuration
+boolean isToDeploy(String envName) {
+	return (envName == 'A' || envName == 'B' || envName == 'U')
+}
+
+boolean isToCheckTWSDeployment(String artifactId, String envName) {
+	return (!isToDeploy(envName) && artifactId == 'jb007-sample-sld')
+}
+
+
+stage ('Prepare') {
+	node('maven') {
+		// Initialisation des variables propre au stage
+		String configurationUrl = 'http://git-scm.pole-emploi.intra/pe/jb007-sample-ic/raw/master/configuration.json'
+		
+		// Chargement de la configuration
+		def configuration
+		try {
+			String configurationText = new URL(configurationUrl).getText(requestProperties: [Accept: 'application/json', 'PRIVATE-TOKEN': env.gitlabPrivateToken])
+			configuration = json.parseFromText(configurationText)
+		} catch (exception) {
+			echo "Une erreur est survenue à la lecture du fichier " + configurationUrl.substring(configurationUrl.lastIndexOf('/') + 1) + " !" + exception.getMessage()
+			throw exception
+		}
+
+		// Positionnement des properties du job
+		String envNames = " ";
+		for (String c : configuration.environnements.keySet().sort()) {
+			if (configuration.environnements[c].category.toLowerCase() == "fab") {
+				envNames += "\n" + c
+			}
+		}
+		def buildParameters = [choice(choices: envNames, description: '', name: 'cadre')]
+		def componentParams = [:]
+		for (String componentGA : configuration.components.sort()) {
+			String artifactId = componentGA.substring(componentGA.lastIndexOf(":")+1)
+			componentParams.put(artifactId, componentGA)
+			buildParameters.add(string(defaultValue: '', description: 'Version', name: artifactId))
+		}
+		buildParameters.add(text(defaultValue: '', description: '', name: 'description'))
+		properties([parameters(buildParameters), buildDiscarder(logRotator(artifactDaysToKeepStr: '', artifactNumToKeepStr: '', daysToKeepStr: '', numToKeepStr: configuration.logNumToKeep))])
+		
+		// Récupération et vérification des paramètres de l'utilisateur
+		if (env.cadre == null || env.cadre.isEmpty()) {
+			error "[ERROR] Le parametre 'cadre' ne doit pas etre vide !"
+		}
+		envName = env.cadre
+		for (String a : componentParams.keySet()) {
+			if (env."$a") {
+				println "bundle: " + componentParams["$a"] + ":" + env."$a"
+				bundlesList.add(createBundleFromGAV(componentParams["$a"] + ":" + env."$a"))
+			}
+		}
+		if (bundlesList.isEmpty()) {
+			error "[ERROR] Il faut selectionne au moins un bundle a livrer !"
+		}
+		
+		// Affichage du titre du build
+		currentBuild.displayName = "Cadre $envName #${env['BUILD_NUMBER']}"
+
+		// Affichage de la description du build
+		currentBuild.description = ''
+		for (def bundle : bundlesList) {
+			// Pour racourcir le artifactId, peu de place de disponible dans le currentBuild.description
+			// en général seul le 1er et le dernier élement (sepéaration tiret '-') sont pertinents
+			currentBuild.description += bundle.artifactId.substring(0, bundle.artifactId.indexOf('-'))
+			currentBuild.description += bundle.artifactId.substring(bundle.artifactId.lastIndexOf('-'))
+			currentBuild.description += ':' + bundle.releaseVersion
+			if (isToDeploy(envName)) {
+				currentBuild.description += '(Deploy)\n'
+			}
+			else if (isToCheckTWSDeployment(bundle.artifactId, envName)) {
+				currentBuild.description += '(CheckTWS)\n'
+			}
+			else {
+				currentBuild.description += '(Deliv)\n'
+			}
+		}
+		println "---------------------------------------------------"
+		println "Description du Build:\n" + currentBuild.description
+		println "---------------------------------------------------"
+
+		// Initialisation des variables du pipeline
+		projectName = configuration.projectName
+		emails = configuration.emails
+		envConfig = configuration.environnements[envName]
+		requestSubmitters = configuration.requestSubmitters
+		deliverySubmitters = configuration.deliverySubmitters
+		if (isToDeploy(envName)) {
+			delivAuto = true
+			notificationLevel = NotificationLevel.FAILURE
+		}
+		println "Config $envName: $envConfig"
+
+		// Initialisation des variables jenkins globales
+		env.JAVA_VERSION_HOME = configuration.javaVersionHome
+		env.GROOVY_VERSION_HOME = configuration.groovyVersionHome
+		env.MAVEN_VERSION_HOME = configuration.mavenVersionHome
+		env.PROVEN_CREDENTIAL_ID = configuration.provenCredentialId
+	}
+}
+
+stage('Demande de livraison') {
+	if (!isToDeploy(envName)) {
+		Notification demandeLivraisonNotif = createDemandeLivraisonNotif("${emails.deliv}", "${emails.project}, ${emails.support}", [NotificationProtocol.MAIL], 
+																		 projectName, envName, bundlesList, description, envConfig.matrix)
+		demanderLivraison {
+			submitter		= requestSubmitters
+			notifications	= [demandeLivraisonNotif]
+			inputTimeout	= 1
+		}
+	}
+}
+
+stage('Livraison') {
+	Notification livraisonNotif = createLivraisonMail("${emails.deliv}, ${emails.project}", "${emails.support}", notificationLevel, projectName, envName)
+	livrer {
+		bundles				= bundlesList
+		matrice				= envConfig.matrix
+		livraisonAuto		= delivAuto
+		submitter			= deliverySubmitters
+		notifications		= [livraisonNotif]
+		inputTimeout		= 7
+	}
+}
+
+def bundlesToDeployList = []
+def bundlesToCheckTWSDeploymentList = []
+for (def bundle : bundlesList) {
+	if (isToDeploy(envName)) {
+		bundlesToDeployList.add(bundle)
+	}
+	else if (isToCheckTWSDeployment(bundle.artifactId, envName)) {
+		bundlesToCheckTWSDeploymentList.add(bundle)
+	}
+}
+
+if (bundlesToDeployList.size() > 0) {
+	stage('Deploiement ou TWS') {
+		for (def bundle : bundlesToDeployList) {
+			Notification deploiementNotif = createDeploiementMail("${emails.project}", "${emails.deliv}, ${emails.support}", notificationLevel, projectName, envName)
+			deployer {
+				matrice			= envConfig.matrix
+				bundles			= [bundle]
+				submitter		= requestSubmitters
+				notifications	= [deploiementNotif]
+				fullRetry       = true
+			}
+		}
+	}
+}
+
+if (bundlesToCheckTWSDeploymentList.size() > 0) {
+	// You can remove this stage if you only use Blue Ocean
+	stage('Deploiement ou TWS') {
+		echo '---------------------------------------------------------------------------'
+		echo '-----INFO: Le Deploiement est fait par TWS, normalement dans la nuit !-----'
+		echo '---------------------------------------------------------------------------'
+	}
+	stage('Verification Déploiement TWS') {
+		for (def bundle : bundlesToCheckTWSDeploymentList) {
+			Notification verifDeploiementNotif = createVerificationDeploiementMail("${emails.project}", "${emails.deliv}, ${emails.support}", notificationLevel, projectName, envName)
+			verifierDeploiement {
+				matrice			= envConfig.matrix
+				bundles			= [bundle]
+				submitter		= requestSubmitters
+				notifications	= [verifDeploiementNotif]
+			}
+		}
+	}
+}

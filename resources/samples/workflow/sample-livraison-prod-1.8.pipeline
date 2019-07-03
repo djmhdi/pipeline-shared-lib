@@ -1,0 +1,139 @@
+#!/usr/bin/groovy
+@Library(['pe-cps@v1.2','pipeline-shared-lib@1.latest']) _
+
+import static fr.pe.jenkins.plugins.bundle.BundleFactory.*
+import static fr.pe.jenkins.plugins.notification.html.NotificationHtmlFactory.*
+import fr.pe.jenkins.plugins.notification.Notification
+import fr.pe.jenkins.plugins.notification.NotificationLevel
+import fr.pe.jenkins.plugins.notification.NotificationProtocol
+import fr.pe.jenkins.plugins.util.JenkinsNodes
+import fr.pe.jenkins.plugins.util.RepositoryEnum
+
+def bundlesList = []
+def envConfig
+String envName
+String requestSubmitters
+String deliverySubmitters
+String description
+
+stage ('Prepare') {
+	node('maven') {
+		// Initialisation des variables propre au stage
+		String configurationUrl = 'http://git-scm.pole-emploi.intra/pe/jb007-sample-ic/raw/master/configuration.json'
+		
+		// Chargement de la configuration
+		def configuration
+		try {
+			String configurationText = new URL(configurationUrl).getText(requestProperties: [Accept: 'application/json', 'PRIVATE-TOKEN': env.gitlabPrivateToken])
+			configuration = json.parseFromText(configurationText)
+		} catch (exception) {
+			echo "Une erreur est survenue à la lecture du fichier " + configurationUrl.substring(configurationUrl.lastIndexOf('/') + 1) + " !" + exception.getMessage()
+			throw exception
+		}
+
+		// Positionnement des properties du job
+		String envNames = " ";
+		for (String c : configuration.environnements.keySet().sort()) {
+			if (configuration.environnements[c].category.toLowerCase() == "prod") {
+				envNames += "\n" + c
+			}
+		}
+		def buildParameters = [choice(choices: envNames, description: '', name: 'cadre')]
+		def componentParams = [:]
+		for (String componentGA : configuration.components.sort()) {
+			String artifactId = componentGA.substring(componentGA.lastIndexOf(":")+1)
+			componentParams.put(artifactId, componentGA)
+			buildParameters.add(string(defaultValue: '', description: 'Version', name: artifactId))
+		}
+		buildParameters.add(text(defaultValue: '', description: '', name: 'description'))
+		properties([parameters(buildParameters), buildDiscarder(logRotator(artifactDaysToKeepStr: '', artifactNumToKeepStr: '', daysToKeepStr: '', numToKeepStr: configuration.logNumToKeep))])
+		
+		// Récupération et vérification des paramètres de l'utilisateur
+		if (env.cadre == null || env.cadre.isEmpty()) {
+			error "[ERROR] Le parametre 'cadre' ne doit pas etre vide !"
+		}
+		envName = env.cadre
+		for (String a : componentParams.keySet()) {
+			if (env."$a") {
+				println "bundle: " + componentParams["$a"] + ":" + env."$a"
+				bundlesList.add(createBundleFromGAV(componentParams["$a"] + ":" + env."$a"))
+			}
+		}
+		if (bundlesList.isEmpty()) {
+			error "[ERROR] Il faut selectionne au moins un bundle a livrer !"
+		}
+		
+		// Affichage du titre du build
+		currentBuild.displayName = "Cadre $envName #${env['BUILD_NUMBER']}"
+
+		// Affichage de la description du build
+		currentBuild.description = ''
+		for (def bundle : bundlesList) {
+			// Pour racourcir le artifactId, peu de place de disponible dans le currentBuild.description
+			// en général seul le 1er et le dernier élement (sepéaration tiret '-') sont pertinents
+			currentBuild.description += bundle.artifactId.substring(0, bundle.artifactId.indexOf('-'))
+			currentBuild.description += bundle.artifactId.substring(bundle.artifactId.lastIndexOf('-'))
+			currentBuild.description += ':' + bundle.releaseVersion + '\n'
+		}
+		println "---------------------------------------------------"
+		println "Description du Build:\n" + currentBuild.description
+		println "---------------------------------------------------"
+
+		// Initialisation des variables du pipeline
+		projectName = configuration.projectName
+		emails = configuration.emails
+		envConfig = configuration.environnements[envName]
+		requestSubmitters = configuration.requestSubmitters
+		deliverySubmitters = configuration.deliverySubmitters
+		println "Config $envName: $envConfig"
+
+		// Initialisation des variables jenkins globales
+		env.JAVA_VERSION_HOME = configuration.javaVersionHome
+		env.GROOVY_VERSION_HOME = configuration.groovyVersionHome
+		env.MAVEN_VERSION_HOME = configuration.mavenVersionHome
+		env.PROVEN_CREDENTIAL_ID = configuration.provenCredentialId
+	}
+}
+
+stage('Promotion Prod') {
+	Notification promotionNotif = createPromotionMail("${emails.deliv}, ${emails.ops}", "${emails.project}, ${emails.support}", NotificationLevel.SUCCESS, projectName)
+	promouvoir {
+		bundles				= bundlesList
+		repositorySource	= RepositoryEnum.ALPHA
+		repositoryDest		= RepositoryEnum.PROD
+		submitter			= requestSubmitters
+		notifications		= [promotionNotif]
+		promotionAuto		= true
+	}
+}
+
+stage('Demande de livraison') {
+	Notification demandeLivraisonNotif = createDemandeLivraisonNotif("${emails.deliv}, ${emails.ops}", "${emails.project}, ${emails.support}", [NotificationProtocol.MAIL], 
+																	 projectName, envName, bundlesList, description, envConfig.matrix)
+	demanderLivraison {
+		submitter		= requestSubmitters
+		notifications	= [demandeLivraisonNotif]
+		inputTimeout	= 1
+	}
+}
+
+stage('Livraison') {
+	Notification livraisonNotif = createLivraisonMail("${emails.deliv}, ${emails.project}, ${emails.ops}", "${emails.support}", NotificationLevel.SUCCESS, projectName, envName)
+	livrer {
+		bundles				= bundlesList
+		matrice				= envConfig.matrix
+		withUserPassword	= true
+		submitter			= deliverySubmitters
+		notifications		= [livraisonNotif]
+		inputTimeout		= 7
+	}
+}
+
+if (envName.toLowerCase().contains('prod')) {
+	stage('Sauvegarde Matrice&Dico') {
+		sauvegarderMatrice {
+			matrice = envConfig.matrix
+			bundles	= bundlesList
+		}
+	}
+}

@@ -1,0 +1,109 @@
+#!/usr/bin/groovy
+@Library(['utility-dsl@v1.1','pipeline-shared-lib@1.latest'])_
+
+import fr.pe.jenkins.plugins.bundle.BundleFactory
+import fr.pe.jenkins.plugins.bundle.Bundle
+import fr.pe.jenkins.plugins.util.*
+import fr.pe.jenkins.plugins.notification.*
+import fr.pe.jenkins.plugins.notification.simple.*
+import fr.pe.jenkins.plugins.notification.library.*
+import fr.pe.jenkins.plugins.quality.*
+
+def configuration = [:]
+String projectName
+
+pipeline {
+    agent none
+
+    environment {
+		 GROOVY_VERSION_HOME = 'GROOVY_2_4_3_HOME'
+		 PROVEN_CREDENTIAL_ID = "proven_user"
+		 CONFIG_FILE = "ic/configuration.json"
+		 POM_DEFINITION = "pom.xml"
+		 PROVEN_JAR = "/usr/lib/provenclient-rest-1.6.0-131-all.jar"
+    }
+
+    options {
+    	buildDiscarder(logRotator(numToKeepStr: '1'))
+    	disableConcurrentBuilds()
+    	retry(2)
+    }
+
+    stages {
+            stage('Build+Tests') {
+                agent {
+                	dockerfile {
+                		reuseNode true
+                		dir 'ic/docker/mvn-gitlab'
+                		label 'docker'
+                		args '--user root -v /home/ypicpe/.m2/settings.xml:/home/ypicpe/.m2/settings.xml -v /applis/ypicpe/pur/prd/groovy-2.4.3:/applis/ypicpe/pur/prd/groovy-2.4.3 -v /donapp/ypicpe/p00/jsyt101-slzqax/trv/tmp/:/donapp/ypicpe/p00/jsyt101-slzqax/trv/tmp/'
+                	}
+                }
+                steps {
+                	script {
+                       try {
+                           sh "mvn -gs ${env['MAVEN_PE_SETTINGS']} clean test"
+                       } catch (exception) {
+                           currentBuild.result = 'FAILURE'
+                           throw exception
+                       }
+
+                       //lecture des paramètres de deploiement
+                       try {
+                           configuration = json.parseFromText(readFile(env.CONFIG_FILE))
+                           projectName = configuration.projet
+
+                           def pomDefinition = readMavenPom file: env.POM_DEFINITION
+                           def releaseQualifier = "${env['RELEASE_QUALIFIER'] ? env['BUILD_NUMBER'] + '-' + env['RELEASE_QUALIFIER'].toLowerCase() : env['BUILD_NUMBER']}"
+                           def pipelineBundle = BundleFactory.createStandardReleaseBundleFromPom(pomDefinition, releaseQualifier, "hpi")
+                               pipelineBundle.changelog = ''
+
+                           currentBuild.displayName = "${pipelineBundle.releaseVersion}"
+                        } catch (exception) {
+                            echo "Une erreur est survenue à la lecture du fichier ${configFile} !" + exception.getMessage()
+                        }
+                    }
+                }
+            }
+
+            stage('Publish reports') {
+                agent {
+                    label 'docker'
+                }
+                steps {
+                    script {
+                        dir("build")  {
+                            publishHTML(target: [
+                                reportName : 'API Features Tests',
+                                reportDir:   'spock-reports',
+                                reportFiles: 'index.html',
+                                keepAll:     true,
+                                alwaysLinkToLastBuild: true,
+                                allowMissing: false
+                            ])
+                        }
+                   }
+                }
+            }
+      }
+
+      post {
+            always {
+                script {
+                    String content = "Résultat des tests : \n $env.JOB_URL/API_Features_Tests"
+                    String title = "@all [** ${projectName} **] Construction de la branche ** ${env.BRANCH_NAME} ** à l'état _ ${currentBuild.currentResult} _"
+
+                    Notification notificationSDF = CustomNotification.slack().with(NotificationProtocol.SLACK, title, content)
+                                                                                                 .withSlackOpts("http://mattermost.pic-mutualisee.pole-emploi.intra/hooks/gpzgqc4fd3fj5j7m49jzzbsuwy", "#jenkins-sdf")
+
+                    Notification notification6G = CustomNotification.slack().with(NotificationProtocol.SLACK, title, content)
+                                                                                                        .withSlackOpts("http://mattermost.pic-mutualisee.pole-emploi.intra/hooks/i5r9c4q3einmjfieeehdagza8o", "#jenkinsedd")
+
+                    notifier {
+                        notifications = [notificationSDF, notification6G]
+                    }
+                }
+            }
+      }
+}
+

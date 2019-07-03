@@ -1,0 +1,73 @@
+##
+##   ajouterVersionStable
+##
+##   execute la commande maven deploy:deploy-file, creer le bundle proven et envoi un email au projet
+##
+
+## Environnement global
+Il est nécessaire d'avoir en variable d'environnement global (définit dans la configuration jenkins):
++ env.REPO_ALPHA : obligatoire si le repository n'est pas renseigné
++ env.PROVEN_instance
++ env.PROVEN_url
++ env.MAVEN_PE_SETTINGS
+
+## Environnement Pipeline
++ env.provenUser : pré-requis de la librairie utility-dsl
++ env.provenPassword : pré-requis de la librairie utility-dsl
+
+## Tools
++ java
++ groovy
+
+## Paramètre de la closure
++ bundle = "la bundle a builder"
++ bundleRelativePath = chemin du livrable à intégrer
++ repository = [FACULTATIF] indique le repository sur lequel deployer le bundle, par defaut c'est le alpha qui est utilisé
++ notifications = [FACULTATIF] voir exemple ci-cessous
+
+## Exemples
+
+env.JAVA_VERSION_HOME='JAVA_1_8_0_66_HOME'
+
+- exemple simple 
+``` 
+    ajouterVersionStable {
+        bundle              = releaseBundle
+        bundleRelativePath  = "livrable.zip"
+        notifications       = [releaseNotif]
+    }
+``` 
+
+- avec options facultatives
+``` 
+    construireVersionStable {
+        bundle              = releaseBundle
+        bundleRelativePath  = "livrable.zip"
+        repository          = "http://"
+        notifications       = [releaseNotif]
+    }
+``` 
+
+Exemple d'instance de notification par défaut :
+```
+# Pour la release, par défaut, les mails sont envoyés uniquement en cas d'erreur
+# Aujourd'hui, seul le format mail est supporté
+ Notification releaseNotif = ConstructionVersionHtml
+                                .to("mail.projet1@pole-emploi.intra, mail.projet2@pole-emploi.intra", "mail.st@pole-emploi.intra, mail.iqr@pole-emploi.intra")
+ releaseNotif.appendData(NotificationDataKeys.PROJECT_NAME.key, projectName)
+```
+
+Exemple d'instance de notification avec options facultatives :
+```
+# Précision du protocol de notification utilisé : MAIL
+# Précision du niveau de notification : FAILURE
+import fr.pe.jenkins.plugins.notification.*
+import fr.pe.jenkins.plugins.notification.html.*
+
+ Notification releaseNotif = ConstructionVersionHtml
+                                .to("mail.projet1@pole-emploi.intra, mail.projet2@pole-emploi.intra", "mail.st@pole-emploi.intra, mail.iqr@pole-emploi.intra")
+                                .by([NotificationProtocol.MAIL.protocol])
+                                .on([NotificationLevel.FAILURE.level])
+ releaseNotif.appendData(NotificationDataKeys.PROJECT_NAME.key, projectName)
+```
+

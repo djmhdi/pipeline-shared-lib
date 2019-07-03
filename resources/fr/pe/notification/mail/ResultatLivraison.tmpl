@@ -1,0 +1,62 @@
+<html>
+	<head>
+		<title>$title</title>
+		<style>
+			body, pre, table { font-family: Arial, sans-serif; font-size: 14px;}
+			.buildlog { font-family: monospace; font-size: 12px; }
+			table { border-collapse: collapse; width: 100%; }
+			th, td { border: 1px solid black; padding: 4px; text-align: left; }
+			caption { font-weight: bold;}
+			.SUCCESS, .install { color: green }
+			.FAILURE, .fail { color: red }
+			.UNSTABLE { color: orange }
+			.NOT_BUILT, .ABORTED { color: grey }
+			.decomp { color: blue }
+		</style>
+	</head>
+	<body>
+		<p>Bonjour,</p>
+		<p>Les composants ci-dessous du projet <b>$projectName</b> ont été livrés en <span class="${env.customBuildResult}"><b>${env.customBuildResult}</b></span> sur le cadre <b>$cadre</b> via la matrice $matrice</p>
+
+		<table>
+			<caption>Bundles</caption>
+			<tr><th>GroupId</th><th>ArtifactId</th><th>Version</th></tr>
+		 	<% bundles.each{ it-> %>
+				<tr>
+				   <td>$it.groupId</td>
+				   <td>$it.artifactId</td>
+				   <td>$it.releaseVersion</td>
+			   </tr>
+			<% } %>
+		</table>
+		<p>Url du pipeline : <a href="$env.JOB_URL">${env.JOB_NAME}</a> - <a href="$env.BUILD_URL">Build #${env.BUILD_NUMBER}</a></p>
+		
+		<% if(delivery){ %>
+			<table>
+	    		<caption>Approvisionnement <a href="${delivery.approUrl}">${delivery.approId}</a> : <b class="${delivery.status}">${delivery.status}</b></caption>
+	    		<tr><th>Bundle</th><th>Target</th><th>Dictionnaire</th></tr>
+	    		<% delivery.deliveredElements.each{ it -> 
+	    			out << "<tr><td>${it.bundleGAV}</td><td>${it.target}</td><td>${it.dictionaryGAV}</td></tr>"
+	    		} %>
+	        </table>
+        	<p>voir les <a href="${delivery.logUrl}">logs</a> de l'approvisionnement</p>
+		<% } %>
+		<br/>
+		<% bundles.each{ it->
+			if(it.changelog){ %>
+				<table>
+					<caption>CHANGELOG (${it.artifactId})</caption>
+					<tr><td><pre>$it.changelog</pre></td></tr>
+				</table>
+		<%	}
+		} %>
+		
+		<p>
+			<u>Remarque:</u> Par défaut, le déploiement se fera en automatique par les chaines TWS dans la nuit.<br/>
+			Si vous souhaitez qu'il soit réalisé avant, veuillez faire votre demande en répondant à  ce mail.
+		</p>
+		
+		<p>Merci,</p>
+		<p>$signature</p>
+	</body>
+</html>

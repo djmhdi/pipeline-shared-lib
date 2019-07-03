@@ -1,0 +1,7 @@
+#### Release $currentBuild.currentResult pour le composant \n
+\n
+|     groupId        |     artifacId       |     version     |
+|:-------------------|:--------------------|----------------:|
+|  $bundle.groupId   | $bundle.artifactId   | $bundle.releaseVersion |
+
+<$env.BUILD_URL|Détail du build>

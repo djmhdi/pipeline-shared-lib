@@ -1,0 +1,180 @@
+#!/usr/bin/groovy
+@Library(['pe-cps@v1.2','pipeline-shared-lib@1.latest']) _
+
+import static fr.pe.jenkins.plugins.bundle.BundleFactory.*
+import static fr.pe.jenkins.plugins.notification.html.NotificationHtmlFactory.*
+import fr.pe.jenkins.plugins.bundle.Bundle
+import fr.pe.jenkins.plugins.notification.NotificationLevel
+import fr.pe.jenkins.plugins.notification.Notification
+import fr.pe.jenkins.plugins.util.JenkinsNodes
+import fr.pe.jenkins.plugins.util.RepositoryEnum
+
+
+Bundle releaseBundle
+String projectName
+String sonarInstance
+def emails
+def environnements = [:]
+String envName
+String requestSubmitters
+String deliverySubmitters
+
+stage('Release') {
+	// Initialisation des variables propre au stage
+	def componentConf = [
+		confUrl: 'http://git-scm.pole-emploi.intra/pe/ds015-conversionformat-ic/raw/master/configuration.json',
+		bundlePom: 'sld/pom.xml'
+	]
+
+	node('maven') {
+		// Chargement de la configuration
+		def configuration
+		try {
+			String configurationText = new URL(componentConf.confUrl).getText(requestProperties: [Accept: 'application/json', 'PRIVATE-TOKEN': env.gitlabPrivateToken])
+			configuration = json.parseFromText(configurationText)
+		} catch (exception) {
+			echo "Une erreur est survenue a la lecture du fichier " + componentConf.confUrl.substring(componentConf.confUrl.lastIndexOf('/') + 1) + " !" + exception.getMessage()
+			throw exception 
+		}
+
+		// Positionnement des properties du job
+		properties([[$class: 'RebuildSettings', autoRebuild: false, rebuildDisabled: true], buildDiscarder(logRotator(artifactDaysToKeepStr: '', artifactNumToKeepStr: '', daysToKeepStr: '', numToKeepStr: configuration.logNumToKeep))])
+
+		// Initialisation des variables du pipeline
+		projectName = configuration.projectName
+		sonarInstance = configuration.sonarInstance
+		emails = configuration.emails
+		requestSubmitters = configuration.requestSubmitters
+		deliverySubmitters = configuration.deliverySubmitters
+		environnements = configuration.environnements
+		
+		// Initialisation des variables jenkins globales
+		env.JAVA_VERSION_HOME = configuration.javaVersionHome
+		env.GROOVY_VERSION_HOME = configuration.groovyVersionHome
+		env.MAVEN_VERSION_HOME = configuration.mavenVersionHome
+		env.PROVEN_CREDENTIAL_ID = configuration.provenCredentialId
+
+		// Recuperation des sources
+		checkout scm
+
+		// Creation de l'object Bundle a partir du pom
+		def pomDefinition = readMavenPom file: componentConf.bundlePom
+		def releaseQualifier = "${env['RELEASE_QUALIFIER'] ? env['BUILD_NUMBER'] + '-' + env['RELEASE_QUALIFIER'].toLowerCase() : env['BUILD_NUMBER']}"
+		releaseBundle = createStandardReleaseBundleFromPom pomDefinition, releaseQualifier,	 componentConf.forcePackaging ?: pomDefinition.packaging
+		if (fileExists('CHANGELOG')) {
+			releaseBundle.changelog = readFile 'CHANGELOG'
+		}
+
+		// Affichage de la version pour le pipeline
+		currentBuild.displayName = releaseBundle.releaseVersion
+
+		// Build
+		Notification releaseNotif = createConstructionVersionMail("${emails.project}", "", NotificationLevel.FAILURE, projectName)
+		construireVersionStable {
+			bundle			= releaseBundle
+			parentPom		= "pom.xml"
+			mavenProfiles	= "code-quality,livraison"
+			notifications	= [releaseNotif]
+		}
+		// Analyse Sonar
+		analyserQualite {
+			branch = "Dev"
+			mvnProfiles = "code-quality"
+			sonar = sonarInstance
+		}
+	}
+
+	// Verification Sonar Quality Gates (Ne pas mettre dans un node)
+	// Penser à positionner le sonar.webhook.project via l'interface de Sonar
+	Notification verifQualiteNotif = createVerificationQualiteMail("${emails.project}", "", NotificationLevel.UNSTABLE, projectName)
+	verifierQualite {
+		bundle          = releaseBundle
+		notifications   = [verifQualiteNotif]
+	}
+}
+
+/********************** Cadre-A ********************/
+envName = "A"
+stage("Deploiement en Cadre-${envName}") {
+	Notification livraisonNotif = createLivraisonMail("${emails.project}", "", NotificationLevel.FAILURE, projectName, envName)
+	Notification deploiementNotif = createDeploiementMail("${emails.project}", "", NotificationLevel.FAILURE, projectName, envName)
+	livrer {
+		bundles		  = [releaseBundle]
+		matrice		  = environnements[envName].matrix
+		livraisonAuto = true
+		submitter	  = requestSubmitters
+		notifications = [livraisonNotif]
+	}
+	deployer {
+		bundles		  = [releaseBundle]
+		matrice		  = environnements[envName].matrix
+		submitter     = requestSubmitters
+		notifications = [deploiementNotif]
+		fullRetry     = true
+	}
+}
+
+/********************** Cadre-U ********************/
+envName = "U"
+stage("Deploiement en Cadre-${envName}") {
+	Notification livraisonNotif = createLivraisonMail("${emails.project}, ${emails.support}", "${emails.deliv}", NotificationLevel.FAILURE, projectName, envName)
+	Notification deploiementNotif = createDeploiementMail("${emails.deliv}, ${emails.project}", "${emails.support}", NotificationLevel.SUCCESS, projectName, envName)
+	livrer {
+		bundles		  = [releaseBundle]
+		matrice		  = environnements[envName].matrix
+		submitter     = requestSubmitters
+		notifications = [livraisonNotif]
+		inputTimeout  = 50
+	}
+	deployer {
+		bundles		  = [releaseBundle]
+		matrice		  = environnements[envName].matrix
+		submitter     = requestSubmitters
+		notifications = [deploiementNotif]
+		fullRetry     = true
+	}
+}
+
+/********************** Cadre-R ********************/
+envName = "R"
+stage("Demande de livraison en Cadre-${envName}") {
+	Notification demandeLivraisonNotif = createDemandeLivraisonMail("${emails.deliv}", "${emails.project}, ${emails.support}",
+																	projectName, envName, [releaseBundle], "")
+	demanderLivraison {
+		submitter		= requestSubmitters
+		notifications	= [demandeLivraisonNotif]
+		inputTimeout	= 100
+	}
+}
+stage("Livraison en Cadre-${envName}") {
+	Notification livraisonNotif = createLivraisonMail("${emails.deliv}, ${emails.project}", "${emails.support}", NotificationLevel.SUCCESS, projectName, envName)
+	livrer {
+		bundles				= [releaseBundle]
+		matrice				= environnements[envName].matrix
+		submitter			= deliverySubmitters
+		notifications		= [livraisonNotif]
+		inputTimeout		= 7
+	}
+}
+stage("Verification Déploiement TWS Cadre-${envName}") {
+	Notification verifDeploiementNotif = createVerificationDeploiementMail("${emails.project}", "${emails.deliv}, ${emails.support}", NotificationLevel.SUCCESS, projectName, envName)
+	verifierDeploiement {
+		matrice			= environnements[envName].matrix
+		bundles			= [releaseBundle]
+		submitter		= requestSubmitters
+		notifications	= [verifDeploiementNotif]
+	}
+}
+
+/********************** Prod ********************/
+stage("Promotion en Prod") {
+	Notification promotionNotif = createPromotionMail("${emails.deliv}, ${emails.ops}", "${emails.project}, ${emails.support}", NotificationLevel.SUCCESS, projectName)
+	promouvoir {
+		bundle				= releaseBundle
+		repositorySource	= RepositoryEnum.ALPHA
+		repositoryDest		= RepositoryEnum.PROD
+		submitter			= requestSubmitters
+		notifications		= [promotionNotif]
+		inputTimeout		= 200
+	}
+}

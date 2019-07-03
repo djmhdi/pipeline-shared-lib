@@ -1,0 +1,108 @@
+##
+##   genererChangelog
+##
+##   execute des commandes git pour générer le changelog depuis la dernière release. Il est ensuite stocké comme artefact du build jenkins.
+##
+
+## Pré-requis
+Il est nécessaire d'avoir en variable d'environnement projet (définit dans le jenkinsFile):
++ JAVA_VERSION_HOME
++ GROOVY_VERSION_HOME
+
+Dans le path :
++ java
++ groovy
+
+## Paramètre de la closure
++ bundle = le bundle sur lequel générer le changelog: donne la version courante.
++ range = [FACULTATIF] Pour préciser ou commence le changelog:
+    all: prend tous les commits depuis le début du projet
+    concat: ajoute au changelog les commits depuis le dernier tag
+    lastRelease: prend tout entre les deux dernier tag de release
+    "tag1..tag2": range entre dtag1 et tag2 , si on jusqu'à la version courante: tag1..
+    Par défaut prend tout depuis le dernier tag
++ changelogConfig = [FACULTATIF] permet de donner la structure des commit à remonter dans le changelog.
+    Par default tous les commit sont pris. il existe une conf prédéfini: pole-emploi qui respecte les standard du web.
++ gitpush = [FACULTATIF] false par defaut, true pour pousser sous git le changelog
++ saveToBundle = [FACULTATIF] false par defaut, true pour garder le changelog dans le bundle (sert pour les mails)
++ archive = [FACULTATIF] false par defaut, true pour l'archiver dans le job jenkins
+
+A part pour le mode concat, le changelog est écrasé.
+
+## Infos supplémentaires
+
+Pour rappel voilà l'URL de wikiInfra (C'est un wiki dynamique qui permet de savoir ce qui est déployé en quelle version et où)
+[http://10.200.170.45:8531/wikinfra/app/index.html#/]
+
+Attention, si vous fournissez déjà un CHANGELOG.md il sera écrasé.
+
+Pour configurer le contenu du changelog vous devez passer le paramètre changelogConfig.
+Il prend un json ou une conf prédéfini: pole-emploi
+Si ce paramètre n'est pas présent, tous les commits seront pris.
+
+Voilà le contenu de la conf pole-emploi:
+```
+CHANGELOG_CONFIG=[
+    {"prefix":"Feat","titre":"Fonctionnalitées:","features":"true"},
+    {"prefix":"Fix","titre":"Correctifs:","features":"true"},
+    {"prefix":"Refacto","titre":"Réusinage:"},
+    {"prefix":"Style","titre":"Style:"},
+    {"prefix":"Docs","titre":"Documentation:"},
+    {"prefix":"Chore","titre":"Evolutions techniques:"},
+    {"prefix":"Test","titre":"Tests:"}
+    ]
+```
+
+* **prefix** doit être le début de votre commit. Seul les commits avec un prefix seront affichés dans le changelog.
+* **titre** est le titre correspondant à un prefix
+* **features** si c'est à "true", une expression régulière sera utilisée pour trouver des sous-titre dans le message de commit de la forme: "(**US 123**) :"
+
+Le changelog remonte jusqu'au précédant tag de release.
+
+## Exemples
+
+env.JAVA_VERSION_HOME='JAVA_1_8_0_66_HOME'
+env.GROOVY_VERSION_HOME='GROOVY_2_4_3_HOME'
+
+exemple simple pour un changelog de snapshot listant les dernier changement
+``` 
+    genererChangelog {
+		bundle = snapshotBundle
+		changelogConfig = "pole-emploi"
+		archive = true
+	}
+
+``` 
+
+exemple pour générer un changelog uniquement sur la dernière release
+``` 
+    genererChangelog {
+		bundle = releaseBundle
+		changelogConfig = "pole-emploi"
+		range = "lastRelease"
+		gitpush = false
+		saveToBundle = true
+		archive = true
+	}
+
+``` 
+
+exemple pour récuperer un changelog de diff entre deux versions
+``` 
+    genererChangelog {
+		bundle = bundle
+		range = "v1.0.3..v1.1.0"
+		archive = true
+	}
+
+``` 
+
+exemple pour pousser sous git un changelog complet
+``` 
+    genererChangelog {
+		bundle = bundle
+		range = "all"
+		gitpush = true
+	}
+
+``` 

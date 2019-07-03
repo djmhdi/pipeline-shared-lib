@@ -1,0 +1,230 @@
+#!/usr/bin/groovy
+import fr.pe.jenkins.plugins.bundle.Bundle
+import fr.pe.jenkins.plugins.notification.*
+import fr.pe.jenkins.plugins.notification.simple.*
+import fr.pe.jenkins.plugins.notification.library.*
+import fr.pe.jenkins.plugins.util.*
+
+@Library(['pipeline-shared-lib@2.latest','utility-dsl@v2.0-alpha']) _
+
+
+def matrixChecked
+def projectName
+def envName
+def userId
+def bundlesALivrer = []
+def bundlesADemarrer = []
+def canalMattermost
+def isDeploiement
+boolean isProduction    
+
+pipeline {
+
+    agent {
+        label JenkinsNodes.MAVEN.label
+    }
+
+    options {
+        timeout(time:1, unit:'HOURS')
+        buildDiscarder(logRotator(numToKeepStr: '20'))
+    }
+    
+     environment {
+         PROVEN_CREDENTIAL_ID = "proven_user"
+         JAVA_VERSION_HOME = 'JAVA_1_8_0_66_HOME'
+         GROOVY_VERSION_HOME = 'GROOVY_2_4_3_HOME'
+         provenUser = "${env['PROVEN_user']}"
+         provenPassword = "${env['PROVEN_password']}"
+     }
+
+    parameters {
+          booleanParam(defaultValue: true, description: "Par défaut on déploie. En production, déploiement désactivée par la PIC. Ce sont les chaines TWS qui déploie", name: 'deployerBundles')
+    }
+
+    stages {
+        stage('Choix des bundles à livrer') {
+            
+            steps {
+                script {
+                  matrixChecked = env["Matrice"]
+                  def matrixSplitte = matrixChecked.split(":")
+                  
+                  projectName = matrixSplitte[1]
+                  envName = matrixSplitte[2].toUpperCase()
+                  currentBuild.description = "${matrixChecked}"  
+                  currentBuild.displayName = "${envName} #${BUILD_NUMBER}"
+                  isDeploiement = params.deployerBundles    
+    
+                  if (envName.contains('TIC')) {
+                     isProduction = false
+                     canalMattermost ="#jenkins-tic"
+                  }
+                  
+                  if (envName.contains('TIS')) {
+                     isProduction = false
+                     canalMattermost ="#jenkins-tis"
+                  }
+                  
+                  if (envName.contains('VA')) {
+                     isProduction = false
+                     canalMattermost ="#jenkins-va"
+                  }
+                  
+                  if (envName.contains('PROD')) {
+                     isProduction = true
+                     canalMattermost ="#jenkins-prod"
+                     isDeploiement = false
+                  }
+                  
+                  
+                  
+                  def matrixJson
+                   try { 
+                    matrixJson = provenMatrix.get {
+                	           gav = matrixChecked
+                        }
+            	        echo "Contenu de la matrice ${matrixJson}"
+            	        } catch(Exception e) {
+            	            echo "Matrice ${matrixChecked} inexistante"
+            	        throw e
+            	    } 
+            	    
+            	    def parameters = new LinkedList<hudson.model.ParameterDefinition>();
+            	    def bundles = []
+                    for (def element in matrixJson.matrixElements) {
+                        String bundleGAV = element.bundleGAV
+                        
+                         if (bundleGAV.contains("garmr")) {
+                            
+                            continue
+                        }
+                        String[] bundleSplitte = bundleGAV.split(":")
+                        if (!bundles.contains(bundleSplitte[1])) {
+                            parameters.add( new hudson.model.ChoiceParameterDefinition("Livrer ${bundleSplitte[1]}", "Oui\nNon",""))
+                            parameters.add( new hudson.model.ChoiceParameterDefinition("Démarrer ${bundleSplitte[1]}", "Non\nOui",""))
+                            parameters.add( new hudson.model.TextParameterDefinition("Version ${bundleSplitte[1]}", "${bundleSplitte[2]}",""))
+                            bundles.add(bundleSplitte[1])
+                        }
+            	    }    
+            	      
+            	    def result = input message: "Voulez-vous livrer les bundles suivants de la matrice ${matrixChecked}? ", ok: 'Exécuter !', submitterParameter: 'submitter', submitter : env.Livreurs_DROSD_CLE , parameters: parameters
+                    userId = result.submitter
+                    for (def element in matrixJson.matrixElements) {
+                        String bundleGAV = element.bundleGAV
+                       
+                         String[] bundleSplitte = bundleGAV.split(":")
+                        
+                        def livrer = result["Livrer ${bundleSplitte[1]}"]
+                        if (livrer == 'Oui' && bundles.contains(bundleSplitte[1])) {
+                            if (bundleSplitte[2] != result["Version ${bundleSplitte[1]}"]) {
+                                println ("Bundle GAV Origine " + bundleGAV)
+                                bundleGAV = bundleGAV.replace("${bundleSplitte[2]}",result["Version ${bundleSplitte[1]}"])
+                                println ("Bundle GAV Modifié" + bundleGAV)
+                                bundles.remove(bundleSplitte[1])
+                            }
+                            Bundle bundleChecked = new Bundle(bundleSplitte[0],bundleSplitte[1],result["Version ${bundleSplitte[1]}"],"","")
+                            bundlesALivrer.add(bundleChecked)
+                        }
+                    }
+                    
+                    for (def element in matrixJson.matrixElements) {
+                        String bundleGAV = element.bundleGAV
+                        String[] bundleSplitte = bundleGAV.split(":")
+                        
+                        def start = result["Démarrer ${bundleSplitte[1]}"]
+                        if (start == 'Oui' && bundles.contains(bundleSplitte[1])) {
+                            bundlesADemarrer.add(bundleGAV)
+                        }
+                    }
+    		}
+            }
+        }    
+        
+        stage('Livraison ') {
+            steps {
+                script {        
+                    Notification livraisonNotif = Livraison.to(env.Emails_DROSD_CLE, env.Emails_DROSD_SDF).by([NotificationProtocol.MAIL, NotificationProtocol.SLACK])
+                    livraisonNotif.appendData(NotificationDataKeys.PROJECT_NAME.key, projectName)
+                    livraisonNotif.appendData(NotificationDataKeys.CADRE.key, envName)
+                    livraisonNotif.appendData(NotificationDataKeys.MATRICE.key, matrixChecked)
+                    livraisonNotif.appendData(NotificationDataKeys.DESCRIPTION.key, envName)
+                    livraisonNotif.withSlackOpts("${env.MATTERMOST_DROSD_CLE}", canalMattermost)
+    
+                    def deliverySubmitters = env.Livreurs_DROSD_CLE
+                    if (isProduction) {
+                        def result = input message: "Production - Renseigner votre login Neptune", ok: 'Ok !', parameters: [[$class: 'TextParameterDefinition', defaultValue:"${userId}", description: '', name: 'Proven_User'], [$class: 'PasswordParameterDefinition', description: 'Mot de passe Neptune', name: 'Proven_Password']]
+                        env.provenPassword = result['Proven_Password']
+                        withEnv(["provenUser="+result['Proven_User'],"provenPassword=" +result['Proven_Password']]) {
+                                
+                            livrer {
+                                bundles = bundlesALivrer
+                                matrice =  matrixChecked
+                                livraisonAuto = true
+                                notifications = [livraisonNotif]
+                                submitter = deliverySubmitters
+                            }
+                        }
+                    } else {
+                         withEnv(["provenUser="+env.provenUser,"provenPassword=" +env.provenPassword]) {
+                            livrer {
+                                bundles = bundlesALivrer
+                                matrice =  matrixChecked
+                                livraisonAuto = true
+                                notifications = [livraisonNotif]
+                                submitter = deliverySubmitters
+                            }
+                        }
+                    }  
+                }
+            }
+        }
+ 
+
+        stage('Déploiement') {
+            when { 
+                expression { 
+                    
+                    return isDeploiement
+                   
+                 } 
+            }
+            steps {
+                script {
+                    Notification deploiementNotif = Deploiement.to(env.Emails_DROSD_CLE, env.Emails_DROSD_SDF).by([NotificationProtocol.MAIL, NotificationProtocol.SLACK])
+                    deploiementNotif.withSlackOpts("${env.MATTERMOST_DROSD_CLE}", canalMattermost)
+                    deploiementNotif.appendData(NotificationDataKeys.PROJECT_NAME.key,  projectName)
+                    deploiementNotif.appendData(NotificationDataKeys.CADRE.key, envName)
+                    deploiementNotif.appendData(NotificationDataKeys.MATRICE.key, matrixChecked)
+                    deploiementNotif.appendData(NotificationDataKeys.DESCRIPTION.key, envName)
+            
+                    
+                    if (bundlesALivrer != null && bundlesALivrer.size() > 0) {
+                        deployer {
+                            bundles = bundlesALivrer
+                            matrice =  matrixChecked
+                            notifications = [deploiementNotif]
+                        }
+                    }
+                    
+                } 
+            }
+        }
+        
+        
+        stage('Redémarrage') {
+           
+            steps {
+                script {
+                    if (bundlesADemarrer != null && bundlesADemarrer.size() > 0) {
+                        redemarrer {
+                            bundles = bundlesADemarrer
+                            matrice = matrixChecked
+                        }
+                    } else {
+                        echo "Pas de redémarrage demandé"
+                    }
+               } 
+            }
+        } 
+    }
+}

@@ -1,0 +1,267 @@
+/**
+ Pré-requis Jenkins :
+    - crédential gitlab_private_token pour stocker le token privé gitlab_private_token
+    - variable d'environnement PROVEN_user et PROVEN_password
+    - Plugin Jenkins Mattermost
+*/
+@Library(['utility-dsl@v2.0-alpha','pipeline-shared-lib@2.nightly'])_
+
+import fr.pe.jenkins.plugins.bundle.BundleFactory
+import fr.pe.jenkins.plugins.bundle.Bundle
+import fr.pe.jenkins.plugins.util.*
+import fr.pe.jenkins.plugins.notification.*
+import fr.pe.jenkins.plugins.notification.library.*
+import fr.pe.jenkins.plugins.notification.simple.*
+
+Bundle releaseBundle
+def configurationProjet = [:]
+def configurationGlobale = [:]
+
+String cadreQualificationComposant = 'TIC'
+String cadreQualificationSysteme = 'TIS'
+String cadreRecette = 'VA'
+String cadreProduction = 'PROD'
+
+Notification demanderLivraisonNotif
+Notification livraisonNotif
+Notification deploiementNotif
+Notification promotionNotif
+
+String optionsCadre = "$cadreQualificationComposant\n$cadreQualificationSysteme\n$cadreRecette\n$cadreProduction"
+String jobLivraison
+String cibleLivraison
+
+pipeline {
+    agent none
+
+    environment {
+        CONFIG_FILE = "ic/configuration.json"
+        GLOBALE_CONFIG_URL = "http://git-scm.pole-emploi.intra/<path depot configuration globale>/raw/master/configuration.json"
+        GITLAB_CREDENTIAL_ID = "gitlab_private_token"
+        POM_DEFINITION = "pom.xml"
+        JOB_LIVRAISON = "projet/pipeline_livraison-composant"
+        provenUser = "${env['PROVEN_user']}"
+        provenPassword = "${env['PROVEN_password']}"
+
+    }
+
+    tools {
+        maven "MAVEN_3_5_0_HOME"
+        jdk "JAVA_1_8_0_66_HOME"
+    }
+
+    options {
+        buildDiscarder(logRotator(numToKeepStr: '10'))
+        disableConcurrentBuilds()
+    }
+
+    stages {
+        stage('Release') {
+            agent {
+                 label 'maven'
+             }
+              steps {
+                 script {
+                     //lecture des paramètres de deploiement
+                    jobLivraison = env.JOB_LIVRAISON
+                    try {
+                        configurationProjet = json.parseFromText(readFile(env.CONFIG_FILE))
+                        withCredentials([string(credentialsId: env.GITLAB_CREDENTIAL_ID, variable: 'TOKEN')]) {
+                            String configurationText = new URL(env.GLOBALE_CONFIG_URL).getText(requestProperties: [Accept: 'application/json', 'PRIVATE-TOKEN': "$TOKEN"])
+                            configurationGlobale = json.parseFromText(configurationText)
+                        }
+                    } catch (exception) {
+                        echo "Une erreur est survenue à la lecture des fichiers de configuration !" + exception.getMessage()
+                    }
+
+                    dir("base") {
+                        def pomDefinition = readMavenPom file: env.POM_DEFINITION
+                        def releaseQualifier = "${env['RELEASE_QUALIFIER'] ? env['BUILD_NUMBER'] + '-' + env['RELEASE_QUALIFIER'].toLowerCase() : env['BUILD_NUMBER']}"
+
+                        releaseBundle = BundleFactory.createStandardReleaseBundleFromPom(pomDefinition, releaseQualifier, configurationProjet.packaging)
+                        releaseBundle.unzipArtifact = true
+                        releaseBundle.changelog = ''
+                        currentBuild.displayName = "${releaseBundle.releaseVersion}"
+
+                        Notification releaseNotif = ConstructionVersion.to(configurationGlobale.contacts.EQUIPE, configurationGlobale.contacts.ST)
+                                                        .by([NotificationProtocol.MAIL, NotificationProtocol.SLACK])
+                                                        .withSlackOpts(configurationGlobale.team.endpoint, configurationGlobale.team.channel)
+                        releaseNotif.appendData(NotificationDataKeys.PROJECT_NAME.key, configurationProjet.projet)
+
+                        construireVersionStable {
+                            bundle = releaseBundle
+                            parentPom = "pom.xml"
+                            skipTests = true
+                            notifications = [releaseNotif]
+                        }
+
+                        creerBundleProven {
+                            bundles = [releaseBundle]
+                            repository = RepositoryEnum.ALPHA
+                        }
+                    }
+                }
+             }
+        }
+
+        /* stage("Deploiement qualification composant") {
+            agent {
+                 label 'maven'
+             }
+             steps {
+                  script {
+                     def livParameters = []
+                         livParameters.add(string(name: 'CADRE', value: cadreQualificationComposant))
+                           livParameters.add(string(name: 'BUNDLE_GAV', value: releaseBundle.releaseGAV))
+                           livParameters.add(string(name: 'RESTART_BUNDLES_PREFIX', value: "${releaseBundle.groupId}:${releaseBundle.artifactId}"))
+                         livParameters.add(booleanParam(name: 'DEPLOYER', value: true))
+                           livParameters.add(booleanParam(name: 'ASK_FOR_DELIVERY', value: false))
+                           livParameters.add(booleanParam(name: 'NEED_APPROVAL', value: false))
+
+                     lancerPipelineRetry {
+                         cheminPipeline = jobLivraison
+                         pipelineParameters = livParameters
+                     }
+                 }
+              }
+        }
+
+        stage('Tests composant') {
+            agent none
+            steps {
+                script {
+                    cibleLivraison = validerPromotion {
+                            repository = RepositoryEnum.Beta
+                            submitters = configurationGlobale.submitters.PROMOTION
+                    }
+                }
+            }
+        }
+
+        */
+
+        stage("Livraison qualification système") {
+            agent none
+            steps {
+                 script {
+                     def livParameters = []
+                             livParameters.add(string(name: 'CADRE', value: cadreQualificationSysteme))
+                               livParameters.add(string(name: 'BUNDLE_GAV', value: releaseBundle.releaseGAV))
+
+                     lancerPipelineRetry {
+                         cheminPipeline = jobLivraison
+                         pipelineParameters = livParameters
+                     }
+                }
+            }
+        }
+
+        stage('Tests système') {
+            agent none
+            steps {
+                script {
+                    cibleLivraison = validerPromotion {
+                            repository = RepositoryEnum.RC
+                            submitters = configurationGlobale.submitters.PROMOTION
+                    }
+                }
+            }
+        }
+
+        stage('Promotion recette') {
+            agent {
+                 label 'maven'
+            }
+            steps {
+                script {
+                    promotionNotif = Promotion.to(configurationGlobale.contacts.EQUIPE, "${configurationGlobale.contacts.LIV}, ${configurationGlobale.contacts.ST}")
+                                                .by([NotificationProtocol.MAIL, NotificationProtocol.SLACK])
+                                                .withSlackOpts(configurationGlobale.team.endpoint, configurationGlobale.team.channel)
+                    promotionNotif.appendData(NotificationDataKeys.PROJECT_NAME.key, configurationProjet.projet)
+                    promotionNotif.appendData(NotificationDataKeys.PROMOTION_LEVEL.key, RepositoryEnum.RC.label)
+                    promotionNotif.appendData(NotificationDataKeys.DESCRIPTION.key, 'Promotion en $cadreRecette')
+
+                    promouvoir {
+                        bundle = releaseBundle
+                        submitter = configurationGlobale.submitters.PROMOTION
+                        repositorySource = RepositoryEnum.ALPHA
+                        repositoryDest = RepositoryEnum.RC
+                        notifications = [promotionNotif]
+                    }
+                }
+            }
+        }
+
+        stage("Livraison recette") {
+            agent none
+            steps {
+                 script {
+                     def livParameters = []
+                             livParameters.add(string(name: 'CADRE', value: cadreRecette))
+                               livParameters.add(string(name: 'BUNDLE_GAV', value: releaseBundle.releaseGAV))
+
+                     lancerPipelineRetry {
+                         cheminPipeline = jobLivraison
+                         pipelineParameters = livParameters
+                     }
+                }
+            }
+        }
+
+        stage('Tests acceptation') {
+            agent none
+            steps {
+                script {
+                    cibleLivraison = validerPromotion {
+                        repository = RepositoryEnum.PROD
+                        submitters = configurationGlobale.submitters.PROMOTION
+                    }
+                }
+            }
+        }
+
+        stage('Promotion production') {
+            agent {
+                 label 'maven'
+            }
+             steps {
+                 script {
+                    promotionNotif.appendData(NotificationDataKeys.PROMOTION_LEVEL.key, RepositoryEnum.PROD.label)
+                    promotionNotif.appendData(NotificationDataKeys.DESCRIPTION.key, "[${cibleLivraison}] Promotion en $cadrePROD")
+
+                    promouvoir {
+                        bundle = releaseBundle
+                        submitter = configurationGlobale.submitters.PROMOTION
+                        repositorySource = RepositoryEnum.RC
+                        repositoryDest = RepositoryEnum.PROD
+                        notifications = [promotionNotif]
+                    }
+                }
+            }
+        }
+
+        stage("Livraison production") {
+            steps {
+                script {
+                    def livParametersProd1 = []
+                            livParametersProd1.add(string(name: 'CADRE', value: 'PROD1'))
+                            livParametersProd1.add(string(name: 'BUNDLE_GAV', value: releaseBundle.releaseGAV))
+
+                     def livParametersProd2 = []
+                            livParametersProd2.add(string(name: 'CADRE', value: 'PROD2'))
+                            livParametersProd2.add(string(name: 'BUNDLE_GAV', value: releaseBundle.releaseGAV))
+
+                    lancerPipelineRetry {
+                        cheminPipeline = jobLivraison
+                        pipelineParameters = livParametersProd1
+                    }
+
+                    lancerPipelineRetry {
+                        cheminPipeline = jobLivraison
+                        pipelineParameters = livParametersProd2
+                    }
+                }
+            }
+        }
+    }
+}
