@@ -1,11 +1,11 @@
 #!/usr/bin/groovy
 
-import fr.pe.jenkins.plugins.notification.*
-import fr.pe.jenkins.plugins.util.JenkinsHelper
+import com.capgemini.fs.jenkins.plugins.notification.*
+import com.capgemini.fs.jenkins.plugins.util.JenkinsHelper
 
 /**
  * Fonction de notification par différents protocols
- * @param ( m a n d a t o r y ) config.notifications liste de notifications contenues dans le package fr.pe.jenkins.plugins.notification
+ * @param ( m a n d a t o r y ) config.notifications liste de notifications contenues dans le package com.capgemini.fs.jenkins.plugins.notification
  * @param ( optional ) config.status statut du build
  */
 def call(body) {

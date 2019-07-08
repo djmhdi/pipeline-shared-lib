@@ -25,9 +25,9 @@ L'objet Notification possède les propriétés suivantes.
 ## Exemples
 
 ```
-import fr.pe.jenkins.plugins.notification.*
-import fr.pe.jenkins.plugins.notification.library.*
-import fr.pe.jenkins.plugins.notification.simple.*
+import com.capgemini.fs.jenkins.plugins.notification.*
+import com.capgemini.fs.jenkins.plugins.notification.library.*
+import com.capgemini.fs.jenkins.plugins.notification.simple.*
 
         // Pour envoyer une notification avec un modèle custom, stocké dans un fichier contenu dans les sources du projet
         def content = readFile "ic/release.slack"

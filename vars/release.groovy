@@ -1,7 +1,7 @@
 #!/usr/bin/groovy
-import fr.pe.jenkins.plugins.notification.NotificationDataKeys
-import fr.pe.jenkins.plugins.util.HtmlTemplates
-import fr.pe.jenkins.plugins.util.*
+import com.capgemini.fs.jenkins.plugins.notification.NotificationDataKeys
+import com.capgemini.fs.jenkins.plugins.util.HtmlTemplates
+import com.capgemini.fs.jenkins.plugins.util.*
 
 /**
  * parentPom : le POM sur lequel va s'exécuter la construction ex: pom.xml

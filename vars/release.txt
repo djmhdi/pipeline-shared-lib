@@ -79,8 +79,8 @@ Exemple d'instance de notification avec options facultatives :
 ```
 # Précision du protocol de notification utilisé : MAIL
 # Précision du niveau de notification : FAILURE
-import fr.pe.jenkins.plugins.notification.*
-import fr.pe.jenkins.plugins.notification.html.*
+import com.capgemini.fs.jenkins.plugins.notification.*
+import com.capgemini.fs.jenkins.plugins.notification.html.*
 
  Notification releaseNotif = ConstructionVersionHtml
                                 .to("mail.projet1@pole-emploi.intra, mail.projet2@pole-emploi.intra", "mail.st@pole-emploi.intra, mail.iqr@pole-emploi.intra")
