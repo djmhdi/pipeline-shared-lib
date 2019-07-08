@@ -6,7 +6,7 @@ import fr.pe.jenkins.plugins.util.*
 /**
  * parentPom : le POM sur lequel va s'exécuter la construction ex: pom.xml
  * bundle : le bundle qui contient la version release et la future version de développement ex : releaseBundle
- * mavenProfiles : liste de profiles pour la construction Maven ex : "livraison-proven,repo-alpha"
+ * mvnProfiles : liste de profiles pour la construction Maven ex : "livraison-proven,repo-alpha"
  * emailTo : liste d'adresses email à qui envoyer le résultat de la release "john.doe@pole-emploi.fr, smith.smith@pole-emploi.fr"
  * repository : nom du dépôt dans lequelle stocker la release ex : RepositoryEnum.ALPHA
  * notifications : envoyer un notification sur résultat positif ex : false
