@@ -50,6 +50,10 @@ def check(def config) {
     if (!config.notifications) {
         config.notifications = []
     }
+
+	if (!config.GIT_CREDENTIAL_ID) {
+		throw new Exception("le parametre 'GIT_CREDENTIAL_ID' est obligatoire !")
+	}
 }
 
 def createRelease(def config) {
@@ -82,20 +86,24 @@ def createRelease(def config) {
         sh "${mvnReleaseVersion}"
         sh "${mvnBuild}"
         sh 'find . -name "pom.xml" | xargs git add'
-        sh "git tag -a ${config.bundle.artifactId}-${config.bundle.releaseVersion} -m \"Nouvelle version release ${config.bundle.releaseVersion}\""
-        sh "git commit -m \"release version ${config.bundle.artifactId}-${config.bundle.releaseVersion}\""
-        sh "git push -u origin ${branch}"
 
-        sh "${mvnDeployFile}"
+		withCredentials([usernamePassword(credentialsId: env.GIT_CREDENTIAL_ID, passwordVariable: 'password', usernameVariable: 'username')]) {
+			sh "git config --local credential.helper \"!p() { echo username=\\$GIT_USERNAME; echo password=\\$GIT_PASSWORD; }; p\""
+			sh "git tag -a ${config.bundle.artifactId}-${config.bundle.releaseVersion} -m \"Nouvelle version release ${config.bundle.releaseVersion}\""
+			sh "git commit -m \"release version ${config.bundle.artifactId}-${config.bundle.releaseVersion}\""
+			sh "git push -u origin ${branch}"
 
-        try {
-            sh "${mvnNextDevVersion}"
-            sh 'find . -name "pom.xml" | xargs git add'
-            sh "git commit -m \"next dev version ${config.bundle.artifactId}-${config.bundle.nextDevelopmentVersion}\""
-            sh "git push -u origin ${branch}"
-        } catch (exception) {
-            echo "Warning! Problème lors de l'incrémentation vers la version SNAPSHOT !"
-        }
+			sh "${mvnDeployFile}"
+
+			try {
+				sh "${mvnNextDevVersion}"
+				sh 'find . -name "pom.xml" | xargs git add'
+				sh "git commit -m \"next dev version ${config.bundle.artifactId}-${config.bundle.nextDevelopmentVersion}\""
+				sh "git push -u origin ${branch}"
+			} catch (exception) {
+				echo "Warning! Problème lors de l'incrémentation vers la version SNAPSHOT !"
+			}
+		}
 
         currentBuild.result = 'SUCCESS'
     } catch (exception) {
