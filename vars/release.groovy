@@ -93,9 +93,11 @@ def createRelease(def config) {
 			sh "git commit -m \"release version ${config.bundle.artifactId}-${config.bundle.releaseVersion}\""
 			sh "git push -u origin ${branch}"
 
+			echo "${mvnDeployFile}"
 			sh "${mvnDeployFile}"
 
 			try {
+				echo "${mvnNextDevVersion}"
 				sh "${mvnNextDevVersion}"
 				sh 'find . -name "pom.xml" | xargs git add'
 				sh "git commit -m \"next dev version ${config.bundle.artifactId}-${config.bundle.nextDevelopmentVersion}\""
