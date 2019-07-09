@@ -59,7 +59,7 @@ def createRelease(def config) {
         if (branch == "(no branch)")
             throw new IllegalArgumentException("(no branch)")
 
-        String mvnReleaseVersion = "mvn -gs ${env['MAVEN_PE_SETTINGS']} -f ${config.parentPom} versions:use-releases versions:set -DnewVersion=${config.bundle.releaseVersion}"
+        String mvnReleaseVersion = "mvn -f ${config.parentPom} versions:use-releases versions:set -DnewVersion=${config.bundle.releaseVersion}"
 
         String mvnBuild = "mvn -f ${config.parentPom} ${config.mavenGoals} "
         if (config.mavenProfiles) {
