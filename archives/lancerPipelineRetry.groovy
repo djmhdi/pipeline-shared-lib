@@ -2,7 +2,7 @@
 /**
  * def pipelineParameters = []
  pipelineParameters.add(string(name: 'CADRE', value: 'IQLB'))
- pipelineParameters.add(string(name: 'BUNDLE_GAV', value: "fr.pe.test:test:1.0.0"))
+ pipelineParameters.add(string(name: 'BUNDLE_GAV', value: "com.capgemini.fs.test:test:1.0.0"))
  */
 import static com.capgemini.fs.jenkins.plugins.bundle.BundleFactory.*
 import com.capgemini.fs.jenkins.plugins.util.*
@@ -13,7 +13,7 @@ import com.capgemini.fs.jenkins.plugins.notification.*
  * @param body
  * def livparameters = []
  * livparameters.add(string(name: 'CADRE', value: 'TIC'))
- * livparameters.add(string(name: 'BUNDLE_GAV', value: "fr.pe.test:test:1.0.0"))
+ * livparameters.add(string(name: 'BUNDLE_GAV', value: "com.capgemini.fs.test:test:1.0.0"))
  */
 def call(body) {
     // evaluate the body block, and collect configuration into the object

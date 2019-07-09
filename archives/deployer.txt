@@ -15,7 +15,7 @@ L'environnement est un objet JSON structuré comme suit :
 {
     "
 	{
-      "matrix": "fr.pe.echd.service.ds013:ds013-pfe-transformations-appro:cadre-x"
+      "matrix": "com.capgemini.fs.echd.service.ds013:ds013-pfe-transformations-appro:cadre-x"
     }
 ```
 

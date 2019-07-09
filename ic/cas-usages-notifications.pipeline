@@ -110,8 +110,8 @@ pipeline {
                        			verifDeploiement.appendData(NotificationDataKeys.DESCRIPTION.key, 'TIC')
 
                        		 String jsonProjectProps = '{ "serverVersion":"6.4.0.25310",'
-                               jsonProjectProps <<= '"projectKey":"fr.pe.stra.service.ds004:ds004-docnums:Continuous",'
-                               jsonProjectProps <<= '"dashboardUrl":"http://sonar.pic-mutualisee.pole-emploi.intra/sonar004/dashboard/index/fr.pe.stra.service.ds004:ds004-docnums:Continuous",'
+                               jsonProjectProps <<= '"projectKey":"com.capgemini.fs.stra.service.ds004:ds004-docnums:Continuous",'
+                               jsonProjectProps <<= '"dashboardUrl":"http://sonar.pic-mutualisee.pole-emploi.intra/sonar004/dashboard/index/com.capgemini.fs.stra.service.ds004:ds004-docnums:Continuous",'
                                jsonProjectProps <<= '"serverUrl":"http://sonar.pic-mutualisee.pole-emploi.intra/sonar004",'
                                jsonProjectProps <<= '"ceTaskUrl":"http://sonar.pic-mutualisee.pole-emploi.intra/sonar004/api/ce/task?id=AV6oqtFqLV1TgW7FJKKG",'
                                jsonProjectProps <<= '"ceTaskId":"AV6oqtFqLV1TgW7FJKKG"}'

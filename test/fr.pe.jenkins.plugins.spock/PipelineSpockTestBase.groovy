@@ -22,7 +22,7 @@ class PipelineSpockTestBase extends Specification  implements RegressionTest {
     def delivery = [:]
     Bundle bundle
 
-    String matrice = "fr.pe.tech:declarative-pipeline-matrice:tic"
+    String matrice = "com.capgemini.fs.tech:declarative-pipeline-matrice:tic"
     String mailto = "prenom.nom@pole-emploi.fr"
     String projectName = "PipelineSharedLib"
     String RESULT_SUCCESS = "SUCCESS"
@@ -67,7 +67,7 @@ class PipelineSpockTestBase extends Specification  implements RegressionTest {
         dictionary["fadia.codeEnveloppe"] = "ty"
         dictionary["ic.deploy.type"] = "osb"
 
-        bundle = BundleFactory.createSimpleBundle("fr.pe.tech", "pipeline-shared-lib", "1.0.0", "jar")
+        bundle = BundleFactory.createSimpleBundle("com.capgemini.fs.tech", "pipeline-shared-lib", "1.0.0", "jar")
         bundle.changelog = 'Changelog...'
 
         delivery.approUrl = "http://proven.intra/approUrl"

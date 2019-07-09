@@ -6,30 +6,30 @@
 	},
 	"environnements": {
 		"TIC": {
-			"matrix": "fr.pe.ged.gedfa:mtx-gedfa-appro-fab:cadre-a",
+			"matrix": "com.capgemini.fs.ged.gedfa:mtx-gedfa-appro-fab:cadre-a",
 			"deploy": true
 		},
 		"TIS": {
-			"matrix": "fr.pe.ged.gedfa:mtx-gedfa-appro-fab:cadre-u",
+			"matrix": "com.capgemini.fs.ged.gedfa:mtx-gedfa-appro-fab:cadre-u",
 			"deploy": true
 		},
 		"VA": {
-			"matrix": "fr.pe.ged.gedfa:mtx-gedfa-appro-fab:cadre-r"
+			"matrix": "com.capgemini.fs.ged.gedfa:mtx-gedfa-appro-fab:cadre-r"
 		},
 		"PMS-1": {
-			"matrix": "fr.pe.ged.gedfa:mtx-gedfa-appro-prod:pms-1",
+			"matrix": "com.capgemini.fs.ged.gedfa:mtx-gedfa-appro-prod:pms-1",
             "production": true
 		},
 		"PMS-2": {
-			"matrix": "fr.pe.ged.gedfa:mtx-gedfa-appro-prod:pms-2",
+			"matrix": "com.capgemini.fs.ged.gedfa:mtx-gedfa-appro-prod:pms-2",
             "production": true
 		},
 		"PROD-1": {
-			"matrix": "fr.pe.ged.gedfa:mtx-gedfa-appro-prod:prod-1",
+			"matrix": "com.capgemini.fs.ged.gedfa:mtx-gedfa-appro-prod:prod-1",
             "production": true
 		},
 		"PROD-2": {
-			"matrix": "fr.pe.ged.gedfa:mtx-gedfa-appro-prod:prod-2",
+			"matrix": "com.capgemini.fs.ged.gedfa:mtx-gedfa-appro-prod:prod-2",
             "production": true
 		}
 	},

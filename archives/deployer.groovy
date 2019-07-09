@@ -15,7 +15,7 @@ import static com.capgemini.fs.jenkins.plugins.restart.Restart.restart
  * config.bundles : un tableau de bundles. ex: bundles = [releaseBundle]
  * config.environnement : l'environnement sur lequel déployé. ex : environnement.TIC en considérant qu'environnement
  * est un objet JSON, issu d'un fichier ou non, respectant la structure
- *{*    "TIC": {*        "matrix": "fr.pe.tech.test:jenkins-pipeline-test-fab:tic",
+ *{*    "TIC": {*        "matrix": "com.capgemini.fs.tech.test:jenkins-pipeline-test-fab:tic",
  *}*}*/
 def call(body) {
     // evaluate the body block, and collect configuration into the object

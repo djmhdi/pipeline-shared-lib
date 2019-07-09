@@ -2,7 +2,7 @@
   "projet": "pipeline-shared-lib",
   "environnements": {
     "TIC": {
-      "matrix": "fr.pe.tech.jenkins.plugins:pipeline-shared-lib-matrice:tic"
+      "matrix": "com.capgemini.fs.tech.jenkins.plugins:pipeline-shared-lib-matrice:tic"
     },
   },
   "contacts": {

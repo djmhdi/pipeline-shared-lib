@@ -12,7 +12,7 @@ La fonction redemmarer prend en paramètre **une liste des bundleGAV** concerné
 Information utilisées dans le fichier environnements.json  :
 ```
 	{
-	    "matrix": "fr.pe.tech.test:jenkins-pipeline-test-fab:tic"
+	    "matrix": "com.capgemini.fs.tech.test:jenkins-pipeline-test-fab:tic"
 	}
 ```
 

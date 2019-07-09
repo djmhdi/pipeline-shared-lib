@@ -15,7 +15,7 @@ import static com.capgemini.fs.jenkins.plugins.restart.Restart.restart
  * est un objet JSON, issu d'un fichier ou non, respectant la structure
  * {
  *    "TIC": {
- *        "matrix": "fr.pe.tech.test:jenkins-pipeline-test-fab:tic",
+ *        "matrix": "com.capgemini.fs.tech.test:jenkins-pipeline-test-fab:tic",
  *     }
  * }
  */

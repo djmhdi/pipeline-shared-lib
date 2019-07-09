@@ -1,0 +1,52 @@
+<html>
+	<head>
+		<title>$title</title>
+		<style>
+			body, pre, table { font-family: Arial, sans-serif; font-size: 14px;}
+			.buildlog { font-family: monospace; font-size: 12px; }
+			table { border-collapse: collapse; width: 100%; }
+			th, td { border: 1px solid black; padding: 4px; text-align: left; }
+			caption { font-weight: bold;}
+			.SUCCESS, .install { color: green }
+			.FAILURE, .fail { color: red }
+			.UNSTABLE { color: orange }
+			.NOT_BUILT, ABORTED { color: grey }
+			.decomp { color: blue }
+		</style>
+	</head>
+	<body>
+		<p>Bonjour,</p>
+		<p>Pouvez-vous lancer la livraison du composant ci-dessous du projet <b>$projectName</b> sur le cadre <b>$cadre</b>, s'il vous plait ?</p>
+		<table>
+			<caption>Bundles</caption>
+			<tr><th>GroupId</th><th>ArtifactId</th><th>Version</th></tr>
+			<% bundles.each{ it-> %>
+			<tr>
+				<td>$it.groupId</td>
+				<td>$it.artifactId</td>
+				<td>$it.releaseVersion</td>
+			</tr>
+			<% } %>
+		</table>
+		<p>Url du pipeline : <a href="$env.JOB_URL">$env.JOB_NAME</a> - <a href="$env.BUILD_URL">Build #$env.BUILD_NUMBER</a></p>
+
+		<% if(description){ %>
+			<table>
+				<caption>DESCRIPTION</caption>
+				<tr><td><pre>$description</pre></td></tr>
+			</table>
+		<% } %>
+
+		<% bundles.each{ it->
+			if(it.changelog){ %>
+				<table>
+					<caption>CHANGELOG (${it.artifactId})</caption>
+					<tr><td><pre>$it.changelog</pre></td></tr>
+				</table>
+		<%	}
+		} %>
+		
+		<p>Merci,</p>
+		<p>$signature</p>
+	</body>
+</html>

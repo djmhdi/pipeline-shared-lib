@@ -1,0 +1,39 @@
+<html>
+<head>
+    <title>$title</title>
+    <style>
+			body, pre, table { font-family: Arial, sans-serif; font-size: 14px;}
+			.buildlog { font-family: monospace; font-size: 12px; }
+			table { border-collapse: collapse; width: 100%; }
+			th, td { border: 1px solid black; padding: 4px; text-align: left; }
+			caption { font-weight: bold;}
+			.SUCCESS, .install { color: green }
+			.FAILURE, .fail { color: red }
+			.UNSTABLE { color: orange }
+			.NOT_BUILT, ABORTED { color: grey }
+			.decomp { color: blue }
+		</style>
+</head>
+<body>
+    <p>Bonjour</p>
+    <p>La verification du déploiement des éléments ci-dessous est au statut <span class="$env.customBuildResult"><b>$env.customBuildResult</b></span></p>
+
+    <p>Url du pipeline : <a href="$env.JOB_URL">$env.JOB_NAME</a> - <a href="$env.BUILD_URL">Build #$env.BUILD_NUMBER</a></p>
+
+    <table>
+        <caption>Composants</caption>
+        <tr><th>GroupId</th><th>ArtifactId</th><th>Version</th></tr>
+        <% bundles.each{ it-> %>
+        <tr>
+            <td>$it.groupId</td>
+            <td>$it.artifactId</td>
+            <td>$it.releaseVersion</td>
+        </tr>
+        <% } %>
+    </table>
+
+
+
+    <p>$signature</p>
+</body>
+</html>

@@ -34,7 +34,7 @@ class DeployTYSpec extends Specification {
         dictionary["fadia.codeEnveloppe"] = "ty"
         dictionary["ic.deploy.type"] = "osb"
 
-        bundle = new Bundle("fr.pe.tech.test", "jenkins-pipeline-test", "1.0.1", "1.0.2-SNAPSHOT", "ear")
+        bundle = new Bundle("com.capgemini.fs.tech.test", "jenkins-pipeline-test", "1.0.1", "1.0.2-SNAPSHOT", "ear")
     }
 
     def cleanup() { target.clear() }

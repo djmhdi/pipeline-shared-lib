@@ -36,7 +36,7 @@ class BundleFactorySpec extends PipelineSpockTestBase {
 
     def "La fabrique d'une instance de bundle pour une release standard incrémente bien le bugfix et respecte le format approprié"() {
         given: "Le bundle snapshot avec les caractéristiques suivantes"
-            groupId = "fr.pe.test"
+            groupId = "com.capgemini.fs.test"
             artifactId = "bundle-test"
             version = "1.0.0-SNAPSHOT"
             qualifier = "12"
@@ -44,9 +44,9 @@ class BundleFactorySpec extends PipelineSpockTestBase {
         when: "On fabrique une instance de bundle de type release standard"
             bundle = BundleFactory.createStandardReleaseBundle(groupId, artifactId, version, qualifier, packaging)
         then: "La version release est correctement formatée"
-            Assertions.assertThat(bundle.releaseVersion).isEqualTo("fr.pe.test:bundle-test:1.0.0-12")
+            Assertions.assertThat(bundle.releaseVersion).isEqualTo("com.capgemini.fs.test:bundle-test:1.0.0-12")
         then: "Le job s'exécute correctement"
-            Assertions.assertThat(bundle.nextDevelopmentVersion).isEqualTo("fr.pe.test:bundle-test:1.0.1-SNAPSHOT")
+            Assertions.assertThat(bundle.nextDevelopmentVersion).isEqualTo("com.capgemini.fs.test:bundle-test:1.0.1-SNAPSHOT")
         then: "Par défaut, la propriété unzipArtifact est à false"
             Assertions.assertThat(bundle.unzipArtifact).isEqualTo(false)
     }

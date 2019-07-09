@@ -1,0 +1,11 @@
+#### $title \n
+Description : _ $description _
+\n
+|     groupId        |     artifacId       |     version     |
+|:-------------------|:--------------------|----------------:|
+<% bundles.each{ it->
+    out << "| $it.groupId | $it.artifactId | $it.releaseVersion |"
+} %>
+\n
+<$env.BUILD_URL|Détail du build> - <$env.JOB_URL|pipeline $env.JOB_NAME>\n
+Exécuté par ** $signature **
