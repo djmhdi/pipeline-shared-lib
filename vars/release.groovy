@@ -73,6 +73,8 @@ def createRelease(def config) {
         }
         mvnBuild <<= "-Djava.io.tmpdir=${env['JENKINS_TMP_DIR']} "
 
+		echo "Selected Nexus repository ${config.repository.envParameterName}"
+		echo "URL Nexus : ${env[config.repository.envParameterName]}"
         String mvnDeployFile = "mvn deploy:deploy-file -Durl=${env[config.repository.envParameterName]} -DpomFile=${config.bundlePom} -Dfile=${config.bundleRelativePath} -Dpackaging=${config.bundle.packaging}"
 
         String mvnNextDevVersion = "mvn -f ${config.parentPom} versions:set -DnewVersion=${config.bundle.nextDevelopmentVersion}"
