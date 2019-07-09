@@ -6,12 +6,12 @@
 */
 @Library(['utility-dsl@v2.0-alpha','pipeline-shared-lib@2.nightly'])_
 
-import fr.pe.jenkins.plugins.bundle.BundleFactory
-import fr.pe.jenkins.plugins.bundle.Bundle
-import fr.pe.jenkins.plugins.util.*
-import fr.pe.jenkins.plugins.notification.*
-import fr.pe.jenkins.plugins.notification.library.*
-import fr.pe.jenkins.plugins.notification.simple.*
+import com.capgemini.fs.jenkins.plugins.bundle.BundleFactory
+import com.capgemini.fs.jenkins.plugins.bundle.Bundle
+import com.capgemini.fs.jenkins.plugins.util.*
+import com.capgemini.fs.jenkins.plugins.notification.*
+import com.capgemini.fs.jenkins.plugins.notification.library.*
+import com.capgemini.fs.jenkins.plugins.notification.simple.*
 
 Bundle releaseBundle
 def configurationProjet = [:]

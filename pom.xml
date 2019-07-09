@@ -5,12 +5,12 @@
     <parent>
         <groupId>org.jenkins-ci.plugins</groupId>
         <artifactId>plugin</artifactId>
-        <version>2.26</version>
+        <version>2.37</version>
         <relativePath/>
     </parent>
-    <groupId>fr.pe.tech.jenkins.plugins</groupId>
+    <groupId>com.capgemini.fs.coreteam.jenkins.plugins</groupId>
     <artifactId>pipeline-shared-lib</artifactId>
-    <version>2.13.0-SNAPSHOT</version>
+    <version>1.0.0-SNAPSHOT</version>
     <packaging>hpi</packaging>
     <name>Pipeline: Shared Groovy Libraries by ST Nantes</name>
     <!-- <scm> -->
@@ -20,9 +20,9 @@
     <!-- <tag>HEAD</tag> -->
     <!-- </scm> -->
     <properties>
-        <jenkins.version>2.46.1</jenkins.version>
-        <java.level>7</java.level>
-        <jenkins-test-harness.version>2.13</jenkins-test-harness.version>
+        <jenkins.version>2.164.3</jenkins.version>
+        <java.level>8</java.level>
+        <jenkins-test-harness.version>2.31</jenkins-test-harness.version>
         <hpi-plugin.version>2.1</hpi-plugin.version>
 
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
@@ -53,7 +53,6 @@
             <plugin>
                 <groupId>org.jenkins-ci.tools</groupId>
                 <artifactId>maven-hpi-plugin</artifactId>
-                <version>${hpi-plugin.version}</version>
             </plugin>
             <plugin>
                 <!-- The gmavenplus plugin is used to compile Groovy code. To learn more about this plugin,
@@ -93,7 +92,6 @@
             <!-- Only required if names of spec classes don't match default Surefire patterns (`*Test` etc.) -->
             <plugin>
                 <artifactId>maven-surefire-plugin</artifactId>
-                <version>2.18.1</version>
                 <configuration>
                     <includes>
                         <include>**/*Spec.*</include>

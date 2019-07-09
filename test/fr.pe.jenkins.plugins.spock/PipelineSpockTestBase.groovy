@@ -1,11 +1,11 @@
-package fr.pe.jenkins.plugins.spock
+package com.capgemini.fs.jenkins.plugins.spock
 
 /**
  * Created by eggo1060 on 04/10/2017.
  */
 import com.lesfurets.jenkins.unit.RegressionTest
 import spock.lang.Specification
-import fr.pe.jenkins.plugins.bundle.*
+import com.capgemini.fs.jenkins.plugins.bundle.*
 
 /**
  * A base class for Spock testing using the pipeline helper

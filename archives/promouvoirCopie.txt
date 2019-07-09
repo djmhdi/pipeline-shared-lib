@@ -1,0 +1,54 @@
+##
+##   promouvoir
+##
+##   étape de promotion d'un bundle
+##
+
+## Environnement Jenknis
+Il est nécessaire d'avoir en variable d'environnement global (définit dans la configuration jenkins):
++ env.PROVEN_instance
++ env.PROVEN_url
+
+## Environnement pipeline
++ env.provenUser : pré-requis de la librairie utility-dsl
++ env.provenPassword : pré-requis de la librairie utility-dsl
+
+## Tools
++ jdk
++ maven
+
+## Paramètre de la closure
++ bundle = "le bundle a promouvoir" @Deprecated
++ bundles = "les bundles a promouvoir"
++ repositorySource = "repository source"
++ promotionAuto = [FACULTATIF] 'false' (valeur par defaut) ajoute une demande de validation avant de lancer la promotion, 'true': la promotion est lancée directement"
++ repositoryDest = "repository vers lequel on souhaite promouvoir le bundle"
++ submitters = [FACULTATIF] "liste de nom d'utilisateur authorisé pour valider l'etape, séparé par des virgules et sans espaces entre eux,  si null tout le monde peux valider l'étape"
++ notifications = [peut prendre un tableau vide] 
+
+## Remarques 
+la promotion ne doit pas être incluse dans un bloc node sinon elle block un executeur
+
+## Exemples
+
+- exemple simple, promotion de ALPHA vers BETA
+``` 
+     promouvoir {
+        bundle = releaseBundle @Deprecated
+        bundles = [releaseBundle]
+        repositorySource = RepositoryEnum.ALPHA
+        repositoryDest = RepositoryEnum.PROD
+        notifications = [promotionNotif]
+    }
+``` 
+
+
+Exemple d'instance de notification par défaut :
+```
+import com.capgemini.fs.jenkins.plugins.notification.*
+import com.capgemini.fs.jenkins.plugins.notification.html.*
+
+ Notification promotionNotif = PromotionHtml.to("mail.projet@pole-emploi.intra", "mail.st@pole-emploi.intra")
+    promotionNotif.appendData(NotificationDataKeys.PROJECT_NAME.key, projectName)
+    promotionNotif.appendData(NotificationDataKeys.PROMOTION_LEVEL.key, 'Prod')
+```

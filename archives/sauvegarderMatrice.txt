@@ -1,0 +1,44 @@
+##
+##   sauvegarderMatrice
+##
+##   étape de sauvegarde d'une matrice et des dictionnaires associés
+##
+
+## Pré-requis
+Il est nécessaire d'avoir en variable d'environnement global (définit dans la configuration jenkins):
++ env.PROVEN_JAR
++ env.PROVEN_instance
++ env.PROVEN_url
+
+Il est nécessaire d'avoir en variable d'environnement projet (définit dans le jenkinsFile):
++ env.JAVA_VERSION_HOME
++ env.GROOVY_VERSION_HOME
++ env.PROVEN_CREDENTIAL_ID
+
+## Paramètre de la closure
++ matrice = "le gav de la matrice a sauvegarder"
++ prefix = "[FACULTATIF] le prefix à utiliser pour la version de sauvegarde de la matrice et des dictionnaires, par defaut vaut '_'  "
++ suffix = "[FACULTATIF] le suffix à utiliser pour la version de sauvegarde de la matrice et des dictionnaires, par defaut vaut '_backup-yyyyMMdd'  "
+
+## Remarques
+la sauvegarde ne doit pas être incluse dans un bloc node
+
+## Exemples
+
+- exemple simple creant la matrice de sauvegarde suivante : groupId:artifactid:_version_backup-yyyyMMdd
+``` 
+    sauvegarderMatrice{
+        matrice = "groupId:artifactid:version"
+    }
+``` 
+
+
+- exemple avec l'ensemble des paramètres créant la matrice de sauvegarde suivante : groupId:artifactid:_backup_version_yyyyMMdd
+``` 
+    String dateFormated = new Date().format('yyyyMMdd')
+    sauvegarderMatrice{
+        matrice = "groupId:artifactid:version"
+        prefix  = "_backup_"
+        suffix  = "_$dateFormated"
+    }
+``` 

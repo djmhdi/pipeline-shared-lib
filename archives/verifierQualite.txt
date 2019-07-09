@@ -1,0 +1,26 @@
+# Vérifie la qualité via le plugin Quality Gate (Sonar)
+
+## Description
+TODO
+
+## Pré-requis
++ Avoir utiliser auparavant le `withSonarQubeEnv(config.sonar)` compris de le DSL `analyserQualite`
++ Sonar 6.2 minimum
++ Plugin Jenkins SonarQube en [2.6.1.1212](https://repox.sonarsource.com/sonarsource-public-builds/org/jenkins-ci/plugins/sonar/2.6.1.1212/sonar-2.6.1.1212.hpi)
++ Plugin org.sonarsource.scanner.maven:sonar-maven-plugin:3.2 minimum
++ Ajouter le webhooks au niveau du projet (pas au niveau global) dans l'UI Sonar : JENKINS_URL/sonarqube-webhook/ (https://docs.sonarqube.org/display/SCAN/Analyzing+with+SonarQube+Scanner+for+Jenkins)
+
+## Paramètre de la closure
++ notification = [OBLIGATOIRE mais peut être vide] la notification
++ bundle = [OBLIGATOIRE si notification] bundle qui va être indiqué dans la notification
++ matrice = [FACULTATIF] `QualityStrategy.STANDARD|UNSTABLE_ANYWAY|ABORT_ANYWAY` (défaut: STANDARD)
++ sonarTimeout= [FACULTATIF] <valeur numérique> (minutes) (défaut: 10)
+
+```groovy
+Notification verifQualiteNotif = createVerificationQualiteMail("toto@pole-emploi.fr", "", [NotificationLevel.FAILURE.level, NotificationLevel.UNSTABLE.level], projectName)
+verifierQualite {
+    bundle          = releaseBundle
+    notifications   = [verifQualiteNotif]
+    sonarTimeout    = 2
+}
+```

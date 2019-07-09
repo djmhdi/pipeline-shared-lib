@@ -1,11 +1,11 @@
 #!/usr/bin/groovy
-package fr.pe.jenkins.plugins.proven
+package com.capgemini.fs.jenkins.plugins.proven
 
 import org.junit.Test
-import fr.pe.jenkins.plugins.proven.ProvenResource
-import fr.pe.jenkins.plugins.bundle.Bundle
+import com.capgemini.fs.jenkins.plugins.proven.ProvenResource
+import com.capgemini.fs.jenkins.plugins.bundle.Bundle
 import static groovy.test.GroovyAssert.*
-import static  fr.pe.jenkins.plugins.proven.ProvenResource.*
+import static  com.capgemini.fs.jenkins.plugins.proven.ProvenResource.*
 
 class ProvenResourceTest {
 

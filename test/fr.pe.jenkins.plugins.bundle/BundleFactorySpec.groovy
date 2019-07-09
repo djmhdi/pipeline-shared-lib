@@ -1,11 +1,11 @@
-package fr.pe.jenkins.plugins.notification
+package com.capgemini.fs.jenkins.plugins.notification
 
 import spock.lang.*
-import fr.pe.jenkins.plugins.notification.*
-import fr.pe.jenkins.plugins.notification.library.*
-import fr.pe.jenkins.plugins.notification.simple.*
-import fr.pe.jenkins.plugins.bundle.*
-import fr.pe.jenkins.plugins.spock.PipelineSpockTestBase
+import com.capgemini.fs.jenkins.plugins.notification.*
+import com.capgemini.fs.jenkins.plugins.notification.library.*
+import com.capgemini.fs.jenkins.plugins.notification.simple.*
+import com.capgemini.fs.jenkins.plugins.bundle.*
+import com.capgemini.fs.jenkins.plugins.spock.PipelineSpockTestBase
 import java.util.logging.Logger
 import org.slf4j.*
 import groovy.util.logging.Slf4j

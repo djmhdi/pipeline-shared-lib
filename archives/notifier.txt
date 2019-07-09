@@ -1,0 +1,74 @@
+##############
+notifier
+
+Cette fonction globale permet d'envoyer des notifications via différents protocoles : Mail, Mattermost, etc.
+
+## Pré-requis
+Pour les notifications Mattermost (slack like), il est nécessaire d'avoir créer un webhook
+entrant sur la team de destination des notifications
+Le plugin Mattermost Notification Plugin doit être installé sur l'instance Jenkins
+
+## Paramètre de la closure
++ notifications = un tableau de notifications
+
+L'objet Notification possède les propriétés suivantes.
+- String recipients, recipientsCc : destinataires et destinataires en copie pour les mails
+- String subject, content : objet et contenu des notifications mails ou mattermost
+- List<NotificationProtocol> protocols (Par défaut NotificationProtocol.MAIL) : liste des protocoles souhaités pour la diffusion des notifications
+- NotificationLevel level (Par défaut NotificationLevel.SUCCESS) : Niveau de notification (SUCCESS, UNSTABLE, FAILURE, NOT_BUILT, ABORTED)
+- def datas : tableau contenant les données fournies au modèle de notification
+- String slackEndpoint : URL du webhook entran
+- String slackChannel : nom du channel cible
+- String slackColor : couleur de la notification
+- boolean slackOptionsOverrided = false : permet de savoir si les propriétés endpoint et channel sont surchargées
+
+## Exemples
+
+```
+import com.capgemini.fs.jenkins.plugins.notification.*
+import com.capgemini.fs.jenkins.plugins.notification.library.*
+import com.capgemini.fs.jenkins.plugins.notification.simple.*
+
+        // Pour envoyer une notification avec un modèle custom, stocké dans un fichier contenu dans les sources du projet
+        def content = readFile "ic/release.slack"
+		String title = "@all [test][${currentBuild.currentResult}] "
+		title <<= "Build release "
+		title <<= "${releaseBundle.artifactId} ${releaseBundle.releaseVersion}"
+
+		Notification slackNotif = CustomNotification.slack().with(NotificationProtocol.SLACK, title, content)
+			slackNotif.appendData(NotificationDataKeys.BUNDLE.key, releaseBundle)
+			slackNotif.appendData(NotificationDataKeys.PROJECT_NAME.key, "test")
+
+	    // Pour envoyer une notification avec le modèle par défaut pour la construction d'une version (RELEASE)
+	    Notification construction = ConstructionVersion.to(mailTo, "").by([NotificationProtocol.MAIL, NotificationProtocol.SLACK])
+        	construction.appendData(NotificationDataKeys.BUNDLE.key, releaseBundle)
+        	construction.appendData(NotificationDataKeys.PROJECT_NAME.key, "test")
+        	construction.appendData(NotificationDataKeys.BUNDLES.key, [releaseBundle])
+        	construction.appendData(NotificationDataKeys.DESCRIPTION.key, 'TIC')
+
+        // Pour envoyer une notification avec le modèle par défaut pour déploiement (Deploiement)
+        Notification deploiement = Deploiement.slack().
+            deploiement.appendData(NotificationDataKeys.BUNDLE.key, releaseBundle)
+            deploiement.appendData(NotificationDataKeys.PROJECT_NAME.key, "test")
+            deploiement.appendData(NotificationDataKeys.BUNDLES.key, [releaseBundle])
+            deploiement.appendData(NotificationDataKeys.CADRE.key, 'TIC')
+            deploiement.appendData(NotificationDataKeys.DESCRIPTION.key, 'TIC')
+
+        // Pour envoyer une notification avec le modèle par défaut pour la promotion (RELEASE)
+        Notification promotion = Promotion.to(mailTo, "")
+            									.by([NotificationProtocol.MAIL, NotificationProtocol.SLACK])
+            									.withSlackOpts("http://mattermost.pic-mutualisee.pole-emploi.intra/hooks/i5r9c4q3einmjfieeehdagza8o", "#jenkinsedd")
+            									.withColor("danger")
+            promotion.appendData(NotificationDataKeys.BUNDLE.key, releaseBundle)
+            promotion.appendData(NotificationDataKeys.PROJECT_NAME.key, "test")
+            promotion.appendData(NotificationDataKeys.BUNDLES.key, [releaseBundle])
+            promotion.appendData(NotificationDataKeys.DESCRIPTION.key, 'TIC')
+            promotion.appendData(NotificationDataKeys.PROMOTION_LEVEL.key, 'RC')
+```
+
+
+
+
+
+
+

@@ -1,13 +1,13 @@
 #!/usr/bin/groovy
 @Library(['pe-cps@v1.2','pipeline-shared-lib@1.latest']) _
 
-import static fr.pe.jenkins.plugins.bundle.BundleFactory.*
-import static fr.pe.jenkins.plugins.notification.html.NotificationHtmlFactory.*
-import fr.pe.jenkins.plugins.notification.Notification
-import fr.pe.jenkins.plugins.notification.NotificationLevel
-import fr.pe.jenkins.plugins.notification.NotificationProtocol
-import fr.pe.jenkins.plugins.util.JenkinsNodes
-import fr.pe.jenkins.plugins.util.RepositoryEnum
+import static com.capgemini.fs.jenkins.plugins.bundle.BundleFactory.*
+import static com.capgemini.fs.jenkins.plugins.notification.html.NotificationHtmlFactory.*
+import com.capgemini.fs.jenkins.plugins.notification.Notification
+import com.capgemini.fs.jenkins.plugins.notification.NotificationLevel
+import com.capgemini.fs.jenkins.plugins.notification.NotificationProtocol
+import com.capgemini.fs.jenkins.plugins.util.JenkinsNodes
+import com.capgemini.fs.jenkins.plugins.util.RepositoryEnum
 
 def bundlesList = []
 def envConfig

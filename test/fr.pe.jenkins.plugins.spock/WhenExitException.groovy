@@ -1,4 +1,4 @@
-package fr.pe.jenkins.plugins.spock
+package com.capgemini.fs.jenkins.plugins.spock
 
 /**
  * Created by eggo1060 on 04/10/2017.

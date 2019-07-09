@@ -1,0 +1,43 @@
+# Redémarrage d'un ou plusieurs servers
+
+## Environnement pipeline
++ env.provenUser : pré-requis de la librairie utility-dsl
++ env.provenPassword : pré-requis de la librairie utility-dsl
+
+## Tools
++ jdk
+
+## Signature de la fonction redemarrer
+La fonction redemmarer prend en paramètre **une liste des bundleGAV** concerné et **l'environnement** souhaité.
+Information utilisées dans le fichier environnements.json  :
+```
+	{
+	    "matrix": "fr.pe.tech.test:jenkins-pipeline-test-fab:tic"
+	}
+```
+
+# Usage de la fonction redemarrer
+En admettant que la configuration des environnements soit persistée dans un fichier _ic/environnements.json_ (où **ic** est le répertoire depuis le répertoire parent), la lecture du fichier se fera comme suit :
+
+``` 
+    try {
+		environnements = json.parseFromText(readFile("ic/environnements.json"))
+	} catch (exception) {
+		echo "Une erreur est survenue à la lecture du fichier ic/environnements.json !" + exception.getMessage()
+	}
+```
+
+L'appel de la fonction sera donc aussi simple que :
+```
+    redemarrer {
+        bundles = ["bundle1","bundle2"] as String[]
+        environnement = environnements.TIC
+    }
+```
+
+En complément des infos passées en paramètre de la méthode, il est possible de surcharger les informations extraites de la matrice via le dico utilisé :
+
+```ic.restart.instances = slzkm6:wiuw376;slzkm4:wiuw376``` => liste des instances à redémarrer, par exemple la liste des managés weblo lorsqu'on livre sur l'admin
+
+```ic.restart.type = nuxeo``` => permet de surcharger le type de redémarrage, par exemple pour nuxeo installé sur une target PE tomcat
+                        

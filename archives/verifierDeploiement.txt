@@ -1,0 +1,37 @@
+# Vérifie le déploiement d'un bundle
+
+## Description
+Verifie que le déploiement d'un bundle c'est bien déroulé
+Cette fonctionnalité est aussi intégrer lors de l'utilisation du DSL `deployer`
+Il est capable de verifier soit :
++ la version avec une liste d'url qui renvoie uniquement la version (avec la variable dans le dico ic.deploy.itemstocheck.urls)
++ la version dans un fichier qui contient uniquement la version (avec la variable ic.deploy.itemstocheck.path)
+
+## Environnement pipeline
++ env.provenUser : pré-requis de la librairie utility-dsl
++ env.provenPassword : pré-requis de la librairie utility-dsl
+
+## Tools
++ jdk
+
+## Pré-requis
++ Avoir rajouter une des 2 variables dans le dico du bundle
+  + ic.deploy.itemstocheck.urls = liste url séparée par des virgules
+  + ic.deploy.itemstocheck.path = si le path est un dossier, le fichier contenant la version dans ce dernier doit respecter la convention suivante "artifactId.version"
+  sinon le path désigne un fichier et la seule contrainte comme dans le premier est de contenir unniquement la version
+
+## Paramètre de la closure
++ bundles = [OBLIGATOIRE si notification] bundle qui va être indiqué dans la notification
++ matrice = [OBLIGATOIRE] "GAV de la matrice"
++ notification = [OBLIGATOIRE mais peut être vide] la notification
+
+```groovy
+Notification verifDeploiementNotif = createVerificationDeploiementMail("${emails}", "${emails_cc}", [NotificationLevel.ALL.level], projectName, envName)
+stage('Verification Déploiement TWS') {
+	verifierDeploiement {
+		matrice       = envConfig.matrix
+		bundles       = [bundle]
+		notifications = [verifDeploiementNotif]
+	}
+}
+```

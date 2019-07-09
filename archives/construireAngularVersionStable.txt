@@ -1,0 +1,64 @@
+##
+##   construireAngularVersionStable
+##
+##   execute des commande npm pour monter la version, construire une release, la taguer, créer le bundle Proven, monter la version en snapshot et envoyé un mail
+##
+
+## Pré-requis
+Il est nécessaire d'avoir en variable d'environnement global (définit dans la configuration jenkins):
++ env.REPO_POLE_EMPLOI_URL : obligatoire si le repository n'est pas renseigné
++ env.PROVEN_instance
++ env.PROVEN_url
++ env.MAVEN_PE_SETTINGS
+
+Il est nécessaire d'avoir en variable d'environnement projet (définit dans le jenkinsFile):
++ JAVA_VERSION_HOME
++ GROOVY_VERSION_HOME
+
+Dans le path :
++ java
++ groovy
+
+D'avoir la version 6.10.0 de nodeJS installée.
+
+## Paramètre de la closure
++ bundle = "la bundle a builder"
++ repository = [FACULTATIF] indique le repository sur lequel deployer le bundle, par defaut c'est le repo pole emploi qui est utilisé
++ notifications = [FACULTATIF] voir exemple ci-cessous
++ node = [FACULTATIF] utilisé uniquement si on n'est pas déjà dans un noeud. Sinon on fera un checkout scm en utilisant ce noeud ou par defaut le JenkinsNodes.NODEJS.label
+
+## Exemples
+
+env.JAVA_VERSION_HOME='JAVA_1_8_0_66_HOME'
+env.GROOVY_VERSION_HOME='GROOVY_2_4_3_HOME'
+
+exemple simple 
+``` 
+    construireAngularVersionStable {
+		bundle = releaseBundle
+		notifications = [releaseNotif]
+	}
+
+``` 
+
+avec options facultatives
+``` 
+    construireAngularVersionStable {
+        bundle              = releaseBundle
+        repository          = "http://"
+        notifications       = [snapshotNotif]
+        node                = JenkinsNodes.NODEJS.label
+    }
+``` 
+
+Exemple d'instance de notification :
+```
+# Aujourd'hui, seul le format mail est supporté
+# Dans cet exemple envoyé uniquement en cas d'erreur
+ Notification releaseNotif = ConstructionSnapshotHtml.to("dest@pole-emploi.fr, dest2@pole-emploi.fr", "dest-cc@pole-emploi.fr, cc2@pole-emploi.fr")
+                     .by([NotificationProtocol.MAIL.protocol]).on([NotificationLevel.SUCCESS.level])
+ releaseNotif.appendData(NotificationDataKeys.PROJECT_NAME.key, "projectName")
+
+```
+
+Il est conseillé de mettre la liste des destinataire et le nom de projet dans un fichier configuration.json qui sera lu en début de pipeline.

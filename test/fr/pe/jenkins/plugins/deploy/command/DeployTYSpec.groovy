@@ -1,8 +1,8 @@
-package fr.pe.jenkins.plugins.deploy.command
+package com.capgemini.fs.jenkins.plugins.deploy.command
 
 import spock.lang.*
-import fr.pe.jenkins.plugins.deploy.command.DeployTY
-import fr.pe.jenkins.plugins.bundle.Bundle
+import com.capgemini.fs.jenkins.plugins.deploy.command.DeployTY
+import com.capgemini.fs.jenkins.plugins.bundle.Bundle
 
 /**
  * Demonstrates how &#64;Stepwise causes a spec to be run in incremental steps.

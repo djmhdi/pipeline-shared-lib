@@ -1,0 +1,91 @@
+##
+##   construireVersionStableGitMvn
+##
+##   Legacy
+##   Permet de construire un livrable pour les projets Legacy dont le pom.xml est difficilement adaptable au plugin maven release
+##   On utilise une suite de commande maven et git
+##
+
+## Pré-requis
+Il est nécessaire d'avoir en variable d'environnement global (définit dans la configuration jenkins):
++ env.REPO_ALPHA : obligatoire si le repository n'est pas renseigné
++ env.PROVEN_instance
++ env.PROVEN_url
++ env.MAVEN_PE_SETTINGS
+
+## Environnement pipeline
++ env.provenUser : pré-requis de la librairie utility-dsl
++ env.provenPassword : pré-requis de la librairie utility-dsl
+
+## Tools
++ jdk
++ maven
+
+## Paramètre de la closure
++ parentPom = "chemin vers le pom parent"
++ bundlePom = "chemin vers le pom bundle"
++ bundle = "la bundle a builder"
++ bundleRelativePath = "chemin relatif du bundle construit"
++ mavenProfiles = [FACULTATIF] vide par defaut, profiles maven a utiliser pour le build"
++ mavenGoals = [FACULTATIF] si l'on souhaite autrechose que le "clean verify" par défaut
++ mavenOptions = [FACULTATIF] vide par defaut, options maven a utiliser pour le build"
++ skipTests = [FACULTATIF] false par defaut, true pour ne pas executer les tests unitaires
++ repository = [FACULTATIF] indique le repository sur lequel deployer le bundle, par defaut c'est le alpha qui est utilisé
++ notifications = [FACULTATIF] voir exemple ci-cessous
+
+## Exemples
+
+env.JAVA_VERSION_HOME='JAVA_1_8_0_66_HOME'
+env.GROOVY_VERSION_HOME='GROOVY_2_4_3_HOME'
+
+- exemple simple 
+``` 
+    construireVersionStableGitMvn {
+        bundle             = releaseBundle
+        parentPom          = "pom.xml"
+        bundlePom          = "ear/pom.xml"
+        bundleRelativePath = "ear/target/${releaseBundle.artifactId}-${releaseBundle.releaseVersion}.${releaseBundle.packaging}"
+        mavenGoals         = "clean verify"
+        notifications      = [releaseNotif]
+    }
+``` 
+
+- avec options facultatives
+``` 
+    construireVersionStableGitMvn {
+        bundle              = releaseBundle
+        parentPom           = "pom.xml"
+        bundlePom           = "ear/pom.xml"
+        bundleRelativePath  = "ear/target/${releaseBundle.artifactId}-${releaseBundle.releaseVersion}.${releaseBundle.packaging}"
+        mavenGoals          = "clean verify"
+        mavenProfiles       = "livraison-proven,repo-alpha"
+        skipTests           = true
+        unzipArtefact       = true
+        repository          = "http://"
+        notifications = [releaseNotif]
+    }
+``` 
+
+Exemple d'instance de notification par défaut :
+```
+# Pour la release, par défaut, les mails sont envoyés uniquement en cas d'erreur
+# Aujourd'hui, seul le format mail est supporté
+ Notification releaseNotif = ConstructionVersionHtml
+                                .to("mail.projet1@pole-emploi.intra, mail.projet2@pole-emploi.intra", "mail.st@pole-emploi.intra, mail.iqr@pole-emploi.intra")
+ releaseNotif.appendData(NotificationDataKeys.PROJECT_NAME.key, projectName)
+```
+
+Exemple d'instance de notification avec options facultatives :
+```
+# Précision du protocol de notification utilisé : MAIL
+# Précision du niveau de notification : FAILURE
+import com.capgemini.fs.jenkins.plugins.notification.*
+import com.capgemini.fs.jenkins.plugins.notification.html.*
+
+ Notification releaseNotif = ConstructionVersionHtml
+                                .to("mail.projet1@pole-emploi.intra, mail.projet2@pole-emploi.intra", "mail.st@pole-emploi.intra, mail.iqr@pole-emploi.intra")
+                                .by([NotificationProtocol.MAIL.protocol])
+                                .on([NotificationLevel.FAILURE.level])
+ releaseNotif.appendData(NotificationDataKeys.PROJECT_NAME.key, projectName)
+```
+
