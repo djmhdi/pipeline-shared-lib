@@ -87,8 +87,8 @@ def createRelease(def config) {
         sh "${mvnBuild}"
         sh 'find . -name "pom.xml" | xargs git add'
 
-		withCredentials([usernamePassword(credentialsId: env.GIT_CREDENTIAL_ID, passwordVariable: 'password', usernameVariable: 'username')]) {
-			sh "git config --local credential.helper \"!p() { echo username=\\$GIT_USERNAME; echo password=\\$GIT_PASSWORD; }; p\""
+		withCredentials([usernamePassword(credentialsId: config.GIT_CREDENTIAL_ID, passwordVariable: 'password', usernameVariable: 'username')]) {
+			sh "git config --local credential.helper \"!f() { echo username=\\$username; echo password=\\$password; }; f\""
 			sh "git tag -a ${config.bundle.artifactId}-${config.bundle.releaseVersion} -m \"Nouvelle version release ${config.bundle.releaseVersion}\""
 			sh "git commit -m \"release version ${config.bundle.artifactId}-${config.bundle.releaseVersion}\""
 			sh "git push -u origin ${branch}"
