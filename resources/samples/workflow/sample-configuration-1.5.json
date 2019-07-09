@@ -7,10 +7,10 @@
 	"provenCredentialId": "proven_user",
 	"logNumToKeep": "30",
 	"emails": {
-		"project": "project@pole-emploi.fr",
-		"support": "support@pole-emploi.fr",
-		"deliv": "deliv@pole-emploi.fr",
-		"ops": "ops@pole-emploi.fr"
+		"project": "project@capgemini.com",
+		"support": "support@capgemini.com",
+		"deliv": "deliv@capgemini.com",
+		"ops": "ops@capgemini.com"
 	},
 	"requestSubmitters" : "login neptune de ceux qui peuvent faire des demandes de livraison et/ou de promotion",
 	"deliverySubmitters" : "login neptune des livreurs",

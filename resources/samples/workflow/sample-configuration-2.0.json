@@ -1,7 +1,7 @@
 {
 	"projet": "<nom projet>",
 	"team": {
-		"endpoint": "http://mattermost.pic-mutualisee.pole-emploi.intra/hooks/<id hook team>",
+		"endpoint": "<slack url>/hooks/<id hook team>",
 		"channel": "#<channel>"
 	},
 	"environnements": {

@@ -22,7 +22,7 @@ String deliverySubmitters
 stage('Release') {
 	// Initialisation des variables propre au stage
 	def componentConf = [
-		confUrl: 'http://git-scm.pole-emploi.intra/pe/ds015-conversionformat-ic/raw/master/configuration.json',
+		confUrl: 'http://<git host>/<project name>/raw/master/configuration.json',
 		bundlePom: 'sld/pom.xml'
 	]
 
