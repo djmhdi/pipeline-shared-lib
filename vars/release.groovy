@@ -44,7 +44,7 @@ def check(def config) {
     }
 
     if (!config.repository) {
-        config.repository = RepositoryEnum.ALPHA
+        config.repository = RepositoryEnum.RELEASE
     }
 
     if (!config.notifications) {
@@ -61,7 +61,7 @@ def createRelease(def config) {
 
         String mvnReleaseVersion = "mvn -gs ${env['MAVEN_PE_SETTINGS']} -f ${config.parentPom} versions:use-releases versions:set -DnewVersion=${config.bundle.releaseVersion}"
 
-        String mvnBuild = "mvn -f ${config.parentPom} -gs ${env['MAVEN_PE_SETTINGS']} ${config.mavenGoals} "
+        String mvnBuild = "mvn -f ${config.parentPom} ${config.mavenGoals} "
         if (config.mavenProfiles) {
             mvnBuild <<= "-P${config.mavenProfiles} "
         }
@@ -73,10 +73,9 @@ def createRelease(def config) {
         }
         mvnBuild <<= "-Djava.io.tmpdir=${env['JENKINS_TMP_DIR']} "
 
-        String mvnDeployFile = "mvn -gs ${env['MAVEN_PE_SETTINGS']} "
-        mvnDeployFile <<= "deploy:deploy-file -Durl=${env[config.repository.envParameterName]} -DpomFile=${config.bundlePom} -Dfile=${config.bundleRelativePath} -Dpackaging=${config.bundle.packaging}"
+        String mvnDeployFile = "mvn deploy:deploy-file -Durl=${env[config.repository.envParameterName]} -DpomFile=${config.bundlePom} -Dfile=${config.bundleRelativePath} -Dpackaging=${config.bundle.packaging}"
 
-        String mvnNextDevVersion = "mvn -gs ${env['MAVEN_PE_SETTINGS']} -f ${config.parentPom} versions:set -DnewVersion=${config.bundle.nextDevelopmentVersion}"
+        String mvnNextDevVersion = "mvn -f ${config.parentPom} versions:set -DnewVersion=${config.bundle.nextDevelopmentVersion}"
 
         sh "${mvnReleaseVersion}"
         sh "${mvnBuild}"
@@ -106,8 +105,10 @@ def createRelease(def config) {
             config.notifications[i].appendData(NotificationDataKeys.BUNDLE.key, config.bundle)
         }
 
-        notifier {
-            notifications = config.notifications
-        }
+		if (config.notifications.size() > 0) {
+			notifier {
+				notifications = config.notifications
+			}
+		}
     }
 }
