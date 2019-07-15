@@ -59,7 +59,7 @@ def check(def config) {
 def createRelease(def config) {
     try {
         echo "\n============== Build Release ========================="
-        def branch = sh returnStdout: true, script: 'git branch | grep \\* | cut -d \' \' -f2-'
+        def branch = sh returnStdout: true, script: 'echo -n "$(git branch | cut -d \' \' -f2-)"' 
         if (branch == "(no branch)")
             throw new IllegalArgumentException("(no branch)")
 
@@ -91,7 +91,7 @@ def createRelease(def config) {
 			sh 'git config --local credential.helper "!p() { echo username=\\$username; echo password=\\$password; }; p"'
 			sh "git tag -a ${config.bundle.artifactId}-${config.bundle.releaseVersion} -m \"Nouvelle version release ${config.bundle.releaseVersion}\""
 			sh "git commit -m \"release version ${config.bundle.artifactId}-${config.bundle.releaseVersion}\""
-			sh "git push -u --tags origin ${branch}"
+			sh "git push -u origin ${branch} --tags"
 
 			echo "${mvnDeployFile}"
 			sh "${mvnDeployFile}"
