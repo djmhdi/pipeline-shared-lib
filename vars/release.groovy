@@ -118,7 +118,7 @@ def createRelease(def config) {
         }
 
 		if (config.notifications.size() > 0) {
-			notifier {
+			notify {
 				notifications = config.notifications
 			}
 		}
