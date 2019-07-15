@@ -101,7 +101,7 @@ def createRelease(def config) {
 				sh "${mvnNextDevVersion}"
 				sh 'find . -name "pom.xml" | xargs git add'
 				sh "git commit -m \"next dev version ${config.bundle.artifactId}-${config.bundle.nextDevelopmentVersion}\""
-				sh "git push -u origin ${branch}"
+				sh "git push origin ${branch}"
 			} catch (exception) {
 				echo "Warning! Problème lors de l'incrémentation vers la version SNAPSHOT !"
 			}
