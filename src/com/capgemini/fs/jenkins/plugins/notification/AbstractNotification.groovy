@@ -123,7 +123,7 @@ abstract class AbstractNotification implements Notification {
 
         for (int i = 0; i < protocols.size(); i++) {
             notificationProtocol = protocols[i]
-            contentModel = script.libraryResource "fr/pe/notification/${notificationProtocol.name}/${defaultContentModelName}.tmpl"
+            contentModel = script.libraryResource "com/capgemini/fs/notification/${notificationProtocol.name}/${defaultContentModelName}.tmpl"
 
             setTemplate(notificationProtocol, NotificationTemplate.with(this.defaultTitleModel, contentModel))
         }
