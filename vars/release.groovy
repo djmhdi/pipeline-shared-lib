@@ -79,10 +79,8 @@ def createRelease(def config) {
 
 		echo "Selected Nexus repository ${config.repository.envParameterName}"
 		echo "URL Nexus : ${env[config.repository.envParameterName]}"
-        String mvnDeployFile = "mvn deploy:deploy-file -Durl=${env[config.repository.envParameterName]} -DpomFile=${config.bundlePom} -Dfile=${config.bundleRelativePath} -Dpackaging=${config.bundle.packaging}"
+        
         String mvnNextDevVersion = "mvn -f ${config.parentPom} versions:set -DnewVersion=${config.bundle.nextDevelopmentVersion}"
-	    
-	echo "${mvnDeployFile}"
 	echo "${mvnNextDevVersion}"
 	    
         sh "${mvnReleaseVersion}"
@@ -96,7 +94,12 @@ def createRelease(def config) {
 			sh "git push -v origin ${branch} --tags"
 		}
 
-		sh "${mvnDeployFile}"
+	    	configFileProvider(
+			[configFile(fileId: 'maven-settings', variable: 'MAVEN_SETTINGS')]) {
+			String mvnDeployFile = "mvn -s $MAVEN_SETTINGS deploy:deploy-file -Durl=${env[config.repository.envParameterName]} -DrepositoryId=${env[config.repository.credentialId]} -DpomFile=${config.bundlePom} -Dfile=${config.bundleRelativePath} -Dpackaging=${config.bundle.packaging}"
+			echo "${mvnDeployFile}"
+			sh "${mvnDeployFile}"
+		}
 	    
 	    	try {
 			sh "${mvnNextDevVersion}"
