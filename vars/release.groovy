@@ -96,7 +96,7 @@ def createRelease(def config) {
 
 	    	configFileProvider(
 			[configFile(fileId: 'MavenSettings', variable: 'MAVEN_SETTINGS')]) {
-			String mvnDeployFile = "mvn -s $MAVEN_SETTINGS deploy:deploy-file -Durl=${env[config.repository.envParameterName]} -DrepositoryId=${env[config.repository.credentialId]} -DpomFile=${config.bundlePom} -Dfile=${config.bundleRelativePath} -Dpackaging=${config.bundle.packaging}"
+			String mvnDeployFile = "mvn -gs $MAVEN_SETTINGS deploy:deploy-file -Durl=${env[config.repository.envParameterName]} -DrepositoryId=${env[config.repository.credentialId]} -DpomFile=${config.bundlePom} -Dfile=${config.bundleRelativePath} -Dpackaging=${config.bundle.packaging}"
 			echo "${mvnDeployFile}"
 			sh "${mvnDeployFile}"
 		}
