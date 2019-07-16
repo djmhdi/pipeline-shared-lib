@@ -91,7 +91,7 @@ def createRelease(def config) {
 			sh 'git config --local credential.helper "!p() { echo username=\\$username; echo password=\\$password; }; p"'
 			sh "git tag -a ${config.bundle.artifactId}-${config.bundle.releaseVersion} -m \"Nouvelle version release ${config.bundle.releaseVersion}\""
 			sh "git commit -m \"release version ${config.bundle.artifactId}-${config.bundle.releaseVersion}\""
-			sh "git push -v origin ${branch} --tags"
+			sh "git push -v origin ${branch} ${config.bundle.artifactId}-${config.bundle.releaseVersion}"
 		}
 
 	    	configFileProvider(
