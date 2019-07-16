@@ -80,9 +80,11 @@ def createRelease(def config) {
 		echo "Selected Nexus repository ${config.repository.envParameterName}"
 		echo "URL Nexus : ${env[config.repository.envParameterName]}"
         String mvnDeployFile = "mvn deploy:deploy-file -Durl=${env[config.repository.envParameterName]} -DpomFile=${config.bundlePom} -Dfile=${config.bundleRelativePath} -Dpackaging=${config.bundle.packaging}"
-
         String mvnNextDevVersion = "mvn -f ${config.parentPom} versions:set -DnewVersion=${config.bundle.nextDevelopmentVersion}"
-
+	    
+	echo "${mvnDeployFile}"
+	echo "${mvnNextDevVersion}"
+	    
         sh "${mvnReleaseVersion}"
         sh "${mvnBuild}"
         sh 'find . -name "pom.xml" | xargs git add'
@@ -91,20 +93,23 @@ def createRelease(def config) {
 			sh 'git config --local credential.helper "!p() { echo username=\\$username; echo password=\\$password; }; p"'
 			sh "git tag -a ${config.bundle.artifactId}-${config.bundle.releaseVersion} -m \"Nouvelle version release ${config.bundle.releaseVersion}\""
 			sh "git commit -m \"release version ${config.bundle.artifactId}-${config.bundle.releaseVersion}\""
-			sh "git push -v origin ${branch} ${config.bundle.artifactId}-${config.bundle.releaseVersion}"
+			sh "git push -v origin ${branch} --tags"
+		}
 
-			echo "${mvnDeployFile}"
-			sh "${mvnDeployFile}"
+		sh "${mvnDeployFile}"
+	    
+	    	try {
+			sh "${mvnNextDevVersion}"
 
-			try {
-				echo "${mvnNextDevVersion}"
-				sh "${mvnNextDevVersion}"
+			withCredentials([usernamePassword(credentialsId: config.GIT_CREDENTIAL_ID, passwordVariable: 'password', usernameVariable: 'username')]) {
+				sh 'git config --local credential.helper "!p() { echo username=\\$username; echo password=\\$password; }; p"'
+
 				sh 'find . -name "pom.xml" | xargs git add'
 				sh "git commit -m \"next dev version ${config.bundle.artifactId}-${config.bundle.nextDevelopmentVersion}\""
 				sh "git push origin ${branch}"
-			} catch (exception) {
-				echo "Warning! Problème lors de l'incrémentation vers la version SNAPSHOT !"
 			}
+		} catch (exception) {
+			echo "Warning! Problème lors de l'incrémentation vers la version SNAPSHOT !"
 		}
 
         currentBuild.result = 'SUCCESS'
