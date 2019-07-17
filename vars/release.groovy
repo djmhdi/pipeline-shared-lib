@@ -61,7 +61,7 @@ def createRelease(def config) {
         echo "\n============== Build Release ========================="
         def branch = sh returnStdout: true, script: 'echo -n "$(git branch | cut -d \' \' -f2-)"' 
 	def repoUrl = sh(returnStdout: true, script: 'echo -n "$(git config remote.origin.url)"').trim()
-	def repoUrl
+	
 	withCredentials([usernamePassword(credentialsId: config.GIT_CREDENTIAL_ID, passwordVariable: 'password', usernameVariable: 'username')]) {
 		sh 'git config --local credential.helper "!p() { echo username=\\$username; echo password=\\$password; }; p"'
 		repoUrl = repoUrl.replaceAll("://","://$username:$password}@") //inject credentials into the project repository url
