@@ -97,7 +97,7 @@ def createRelease(def config) {
 	    withCredentials([usernamePassword(credentialsId: config.GIT_CREDENTIAL_ID, passwordVariable: 'password', usernameVariable: 'username')]) {
 		sh "git tag -a ${config.bundle.artifactId}-${config.bundle.releaseVersion} -m \"Nouvelle version release ${config.bundle.releaseVersion}\""
 		sh "git commit -m \"release version ${config.bundle.artifactId}-${config.bundle.releaseVersion}\""
-	    	sh "git push -v ${repoUrl} origin:${branch} --tags"
+	    	sh "git push -v ${repoUrl} ${branch} --tags"
 	    }
 
 	    	configFileProvider(
@@ -113,7 +113,7 @@ def createRelease(def config) {
 			withCredentials([usernamePassword(credentialsId: config.GIT_CREDENTIAL_ID, passwordVariable: 'password', usernameVariable: 'username')]) {
 				sh 'find . -name "pom.xml" | xargs git add'
 				sh "git commit -m \"next dev version ${config.bundle.artifactId}-${config.bundle.nextDevelopmentVersion}\""
-				sh "git push -v ${repoUrl} origin:${branch}"
+				sh "git push -v ${repoUrl} ${branch}"
 			}
 		} catch (exception) {
 			echo "Warning! Problème lors de l'incrémentation vers la version SNAPSHOT !"
