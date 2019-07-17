@@ -64,7 +64,7 @@ def createRelease(def config) {
 	
 	withCredentials([usernamePassword(credentialsId: config.GIT_CREDENTIAL_ID, passwordVariable: 'password', usernameVariable: 'username')]) {
 		sh 'git config --local credential.helper "!p() { echo username=\\$username; echo password=\\$password; }; p"'
-		repoUrl = repoUrl.replaceAll("://","://$username:$password}@") //inject credentials into the project repository url
+		repoUrl = repoUrl.replaceAll("://","://${username}:${password}@") //inject credentials into the project repository url
 	}
 		
         if (branch == "(no branch)")
@@ -94,9 +94,11 @@ def createRelease(def config) {
         sh "${mvnBuild}"
         sh 'find . -name "pom.xml" | xargs git add'
 	
+	    withCredentials([usernamePassword(credentialsId: config.GIT_CREDENTIAL_ID, passwordVariable: 'password', usernameVariable: 'username')]) {
 		sh "git tag -a ${config.bundle.artifactId}-${config.bundle.releaseVersion} -m \"Nouvelle version release ${config.bundle.releaseVersion}\""
 		sh "git commit -m \"release version ${config.bundle.artifactId}-${config.bundle.releaseVersion}\""
 	    	sh "git push -v ${repoUrl} origin:${branch} --tags"
+	    }
 
 	    	configFileProvider(
 			[configFile(fileId: 'MavenSettings', variable: 'MAVEN_SETTINGS')]) {
@@ -108,9 +110,11 @@ def createRelease(def config) {
 	    	try {
 			sh "${mvnNextDevVersion}"
 
-			sh 'find . -name "pom.xml" | xargs git add'
-			sh "git commit -m \"next dev version ${config.bundle.artifactId}-${config.bundle.nextDevelopmentVersion}\""
-			sh "git push -v ${repoUrl} origin:${branch}"
+			withCredentials([usernamePassword(credentialsId: config.GIT_CREDENTIAL_ID, passwordVariable: 'password', usernameVariable: 'username')]) {
+				sh 'find . -name "pom.xml" | xargs git add'
+				sh "git commit -m \"next dev version ${config.bundle.artifactId}-${config.bundle.nextDevelopmentVersion}\""
+				sh "git push -v ${repoUrl} origin:${branch}"
+			}
 		} catch (exception) {
 			echo "Warning! Problème lors de l'incrémentation vers la version SNAPSHOT !"
 		}
