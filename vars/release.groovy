@@ -60,6 +60,13 @@ def createRelease(def config) {
     try {
         echo "\n============== Build Release ========================="
         def branch = sh returnStdout: true, script: 'echo -n "$(git branch | cut -d \' \' -f2-)"' 
+	def repoUrl = sh(returnStdout: true, script: 'echo -n "$(git config remote.origin.url)"').trim()
+	def repoUrl
+	withCredentials([usernamePassword(credentialsId: config.GIT_CREDENTIAL_ID, passwordVariable: 'password', usernameVariable: 'username')]) {
+		sh 'git config --local credential.helper "!p() { echo username=\\$username; echo password=\\$password; }; p"'
+		repoUrl = repoUrl.replaceAll("://","://$username:$password}@") //inject credentials into the project repository url
+	}
+		
         if (branch == "(no branch)")
             throw new IllegalArgumentException("(no branch)")
 
@@ -86,13 +93,10 @@ def createRelease(def config) {
         sh "${mvnReleaseVersion}"
         sh "${mvnBuild}"
         sh 'find . -name "pom.xml" | xargs git add'
-
-		withCredentials([usernamePassword(credentialsId: config.GIT_CREDENTIAL_ID, passwordVariable: 'password', usernameVariable: 'username')]) {
-			sh 'git config --local credential.helper "!p() { echo username=\\$username; echo password=\\$password; }; p"'
-			sh "git tag -a ${config.bundle.artifactId}-${config.bundle.releaseVersion} -m \"Nouvelle version release ${config.bundle.releaseVersion}\""
-			sh "git commit -m \"release version ${config.bundle.artifactId}-${config.bundle.releaseVersion}\""
-			sh "git push -v origin ${branch} --tags"
-		}
+	
+		sh "git tag -a ${config.bundle.artifactId}-${config.bundle.releaseVersion} -m \"Nouvelle version release ${config.bundle.releaseVersion}\""
+		sh "git commit -m \"release version ${config.bundle.artifactId}-${config.bundle.releaseVersion}\""
+	    	sh "git push -v ${repoUrl} origin:${branch} --tags"
 
 	    	configFileProvider(
 			[configFile(fileId: 'MavenSettings', variable: 'MAVEN_SETTINGS')]) {
@@ -104,13 +108,9 @@ def createRelease(def config) {
 	    	try {
 			sh "${mvnNextDevVersion}"
 
-			withCredentials([usernamePassword(credentialsId: config.GIT_CREDENTIAL_ID, passwordVariable: 'password', usernameVariable: 'username')]) {
-				sh 'git config --local credential.helper "!p() { echo username=\\$username; echo password=\\$password; }; p"'
-
-				sh 'find . -name "pom.xml" | xargs git add'
-				sh "git commit -m \"next dev version ${config.bundle.artifactId}-${config.bundle.nextDevelopmentVersion}\""
-				sh "git push origin ${branch}"
-			}
+			sh 'find . -name "pom.xml" | xargs git add'
+			sh "git commit -m \"next dev version ${config.bundle.artifactId}-${config.bundle.nextDevelopmentVersion}\""
+			sh "git push -v ${repoUrl} origin:${branch}"
 		} catch (exception) {
 			echo "Warning! Problème lors de l'incrémentation vers la version SNAPSHOT !"
 		}
